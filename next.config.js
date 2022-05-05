@@ -1,6 +1,14 @@
-/** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-}
+  async redirects() {
+    return [
+      {
+        source: '/',
+        destination: 'https://twitter.com/LearnByVideoDev',
+        permanent: false,
+      },
+    ];
+  },
+};
 
-module.exports = nextConfig
+export default nextConfig;
