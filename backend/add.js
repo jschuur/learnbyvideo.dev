@@ -8,10 +8,8 @@ const Youtube = youtube({
   auth: process.env.YOUTUBE_API_KEY,
 });
 
-const CHANNEL_IDS = ['UCU5seEXTjpF4RRfQn-4242A'];
-
 async function updateChannel(channelId) {
-  console.log(`Updating channel ${channelId}`);
+  console.log(`Processing channel ID ${channelId}`);
 
   try {
     const res = await Youtube.channels.list({
@@ -43,13 +41,15 @@ async function updateChannel(channelId) {
       create: channelFields,
       update: channelFields,
     });
+
+    console.log(`Processed ${channelData.title}`);
   } catch ({ message }) {
-    console.error(`Error updating channel ${channelId}: ${message}`);
+    console.error(`Error processing channel ID ${channelId}: ${message}`);
   }
 }
 
 (async () => {
-  for (const channelId of CHANNEL_IDS) await updateChannel(channelId);
+  for (const channelId of process.argv.slice(2)) await updateChannel(channelId);
 
   await prisma.$disconnect();
 })();
