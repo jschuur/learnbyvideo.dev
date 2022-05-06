@@ -1,48 +1,22 @@
-import { youtube } from '@googleapis/youtube';
 import 'dotenv/config';
 
 import prisma from './prisma.js';
-
-const Youtube = youtube({
-  version: 'v3',
-  auth: process.env.YOUTUBE_API_KEY,
-});
+import { saveVideos, saveChannel } from './db.js';
+import { getRecentVideosFromRSS, getChannelInfo } from './lib.js';
 
 async function updateChannel(channelId) {
   console.log(`Processing channel ID ${channelId}`);
 
   try {
-    const res = await Youtube.channels.list({
-      part: 'snippet,statistics',
-      id: channelId,
-    });
+    const channelData = await getChannelInfo(channelId);
+    await saveChannel(channelData);
 
-    const channelData = res.data.items[0].snippet;
+    console.log(`Adding latest videos for ${channelData.title}`);
 
-    const channelFields = {
-      youtubeId: res.data.items[0].id,
-      channelName: channelData.title,
-      description: channelData.description,
-      customUrl: channelData.customUrl,
-      country: channelData.country,
-      publishedAt: channelData.publishedAt,
+    const channel = await prisma.channel.findUnique({ where: { youtubeId: channelId } });
+    const videos = await getRecentVideosFromRSS(channel);
 
-      thumbnail: channelData.thumbnails.default.url,
-      thumbnailMedium: channelData.thumbnails.medium.url,
-      thumbnailHigh: channelData.thumbnails.high.url,
-
-      statistics: res.data.items[0].statistics,
-    };
-
-    await prisma.channel.upsert({
-      where: {
-        youtubeId: channelId,
-      },
-      create: channelFields,
-      update: channelFields,
-    });
-
-    console.log(`Processed ${channelData.title}`);
+    await saveVideos({ videos, channel });
   } catch ({ message }) {
     console.error(`Error processing channel ID ${channelId}: ${message}`);
   }

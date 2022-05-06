@@ -28,4 +28,24 @@ model Channel {
 
   // YouTube channel launch date
   publishedAt         DateTime
+
+  videos              Video[]
+}
+
+model Video {
+  id                  Int       @id @default(autoincrement())
+  youtubeId           String    @unique
+  channel             Channel   @relation(fields: [channelId], references: [id])
+  channelId           Int
+
+  title               String
+  description         String?
+  thumbnail           String
+
+  views               Int
+  starRating          Json
+
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  publishedAt         DateTime
 }
