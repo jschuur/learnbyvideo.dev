@@ -2,7 +2,8 @@ import 'dotenv/config';
 
 import prisma from './prisma.js';
 import { saveVideos, saveChannel } from './db.js';
-import { getRecentVideosFromRSS, getChannelInfo } from './lib.js';
+import { getRecentVideosFromRSS, getChannelInfo, getVideoInfo } from './lib.js';
+import { error } from './util.js';
 
 async function updateChannel(channelId) {
   console.log(`Processing channel ID ${channelId}`);
@@ -23,7 +24,17 @@ async function updateChannel(channelId) {
 }
 
 (async () => {
-  for (const channelId of process.argv.slice(2)) await updateChannel(channelId);
+  for (const id of process.argv.slice(2)) {
+    try {
+      const youtubeId = id.startsWith('UC')
+        ? id
+        : (await getVideoInfo(id)).data.items[0].snippet.channelId;
+
+      await updateChannel(youtubeId);
+    } catch ({ message }) {
+      error(`Couldn't add channel ${id}: ${message}`);
+    }
+  }
 
   await prisma.$disconnect();
 })();

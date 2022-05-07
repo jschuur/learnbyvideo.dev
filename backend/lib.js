@@ -61,3 +61,9 @@ export async function getChannelInfo(youtubeId) {
     statistics: res.data.items[0].statistics,
   };
 }
+
+export const getVideoInfo = (youtubeId) =>
+  Youtube.videos.list({
+    part: 'snippet',
+    id: youtubeId,
+  });
