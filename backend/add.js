@@ -11,7 +11,7 @@ async function updateChannel(channelId) {
     const channelData = await getChannelInfo(channelId);
     await saveChannel(channelData);
 
-    console.log(`Adding latest videos for ${channelData.title}`);
+    console.log(`Adding latest videos for ${channelData.channelName}`);
 
     const channel = await prisma.channel.findUnique({ where: { youtubeId: channelId } });
     const videos = await getRecentVideosFromRSS(channel);
