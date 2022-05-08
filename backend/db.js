@@ -4,7 +4,54 @@ import prisma from './prisma.js';
 
 import { error } from './util.js';
 
-export const getActiveChannels = () => prisma.channel.findMany();
+export function getActiveChannels({ minLastUpdated, maxLastUpdated, select } = {}) {
+  const query = {
+    where: {
+      videos: {},
+    },
+  };
+
+  if (select) where.select = select;
+
+  // TODO: do this succesively, in some scenarios there is a low chance you miss an update, due to the amount of secondd that passed
+  if (minLastUpdated && maxLastUpdated)
+    query.where = {
+      videos: {
+        some: {
+          publishedAt: {
+            gte: maxLastUpdated,
+          },
+        },
+        none: {
+          publishedAt: {
+            gte: minLastUpdated,
+          },
+        },
+      },
+    };
+  else if (minLastUpdated)
+    query.where = {
+      videos: {
+        some: {
+          publishedAt: {
+            gte: minLastUpdated,
+          },
+        },
+      },
+    };
+  else if (maxLastUpdated)
+    query.where = {
+      videos: {
+        every: {
+          publishedAt: {
+            lt: maxLastUpdated,
+          },
+        },
+      },
+    };
+
+  return prisma.channel.findMany(query);
+}
 
 export async function saveVideos({ videos, channel }) {
   // Get the incrementing video ID to identify if an upsert added a new video
