@@ -17,6 +17,8 @@ const options = minimost(process.argv.slice(2), {
 
 (async () => {
   const { minLastUpdated, maxLastUpdated } = options;
+  let totalNewVideos = 0;
+
   console.log(`Looking for new videos... (${JSON.stringify({ minLastUpdated, maxLastUpdated })})`);
 
   const channels = await getActiveChannels({
@@ -33,8 +35,17 @@ const options = minimost(process.argv.slice(2), {
   for (const channel of channels) {
     const videos = await getRecentVideosFromRSS(channel);
 
-    await saveVideos({ videos, channel });
+    const newVideos = await saveVideos({ videos, channel });
+    totalNewVideos += newVideos.length;
 
     await delay(config.RSS_FEED_UPDATE_DELAY_MS);
   }
+
+  console.log(
+    `\nFound ${pluralize('new video', totalNewVideos, true)} across ${channels.length} ${pluralize(
+      'channel',
+      channels.length,
+      false
+    )}.`
+  );
 })();

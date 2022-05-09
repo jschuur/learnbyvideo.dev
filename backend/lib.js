@@ -22,20 +22,24 @@ export async function getRecentVideosFromRSS(channel) {
 
   console.log(`Getting recent videos via RSS for channel ${channelName}`);
 
-  const feed = await rssParser.parseURL(
-    `https://www.youtube.com/feeds/videos.xml?channel_id=${youtubeId}`
-  );
+  try {
+    const feed = await rssParser.parseURL(
+      `https://www.youtube.com/feeds/videos.xml?channel_id=${youtubeId}`
+    );
 
-  return feed.items.map((item) => ({
-    title: item.title,
-    youtubeId: item.videoId,
-    // channelId: ,
-    description: item.media['media:description'][0],
-    thumbnail: item.media['media:thumbnail'][0]['$'].url,
-    publishedAt: item.pubDate,
-    starRating: item.media['media:community'][0]['media:starRating'][0]['$'],
-    views: parseInt(item.media['media:community'][0]['media:statistics'][0]['$'].views, 10),
-  }));
+    return feed.items.map((item) => ({
+      title: item.title,
+      youtubeId: item.videoId,
+      // channelId: ,
+      description: item.media['media:description'][0],
+      thumbnail: item.media['media:thumbnail'][0]['$'].url,
+      publishedAt: item.pubDate,
+      starRating: item.media['media:community'][0]['media:starRating'][0]['$'],
+      views: parseInt(item.media['media:community'][0]['media:statistics'][0]['$'].views, 10),
+    }));
+  } catch ({ message }) {
+    console.log(`Couldn't get recent videos for channel ${channelName}: ${message}`);
+  }
 }
 
 export async function getChannelInfo(youtubeId) {
