@@ -11,10 +11,12 @@ datasource db {
 }
 
 model Channel {
-  id                  Int       @id @default(autoincrement())
-  youtubeId           String    @unique
+  id                  Int            @id @default(autoincrement())
+  youtubeId           String         @unique
   channelName         String
-  customUrl           String?   @unique
+  type                ChannelType    @default(value: INDIVIDUAL)
+  status              ChannelStatus  @default(value: ACTIVE)
+  customUrl           String?        @unique
   description         String?
   country             String?
   thumbnail           String
@@ -23,8 +25,8 @@ model Channel {
 
   statistics          Json
 
-  createdAt           DateTime  @default(now())
-  updatedAt           DateTime  @updatedAt
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
 
   // YouTube channel launch date
   publishedAt         DateTime
@@ -32,11 +34,29 @@ model Channel {
   videos              Video[]
 }
 
+enum ChannelStatus {
+  ACTIVE
+  PAUSED
+  MODERATED
+  HIDDEN
+  ARCHIVED
+}
+
+enum ChannelType {
+  BRAND
+  INDIVIDUAL
+  COLLABORATION
+  SHOW
+  OTHER
+}
+
 model Video {
-  id                  Int       @id @default(autoincrement())
-  youtubeId           String    @unique
-  channel             Channel   @relation(fields: [channelId], references: [id])
+  id                  Int          @id @default(autoincrement())
+  youtubeId           String       @unique
+  channel             Channel      @relation(fields: [channelId], references: [id])
   channelId           Int
+  status              VideoStatus  @default(value: PUBLISHED)
+  type                VideoType    @default(value: VIDEO)
 
   title               String
   description         String?
@@ -45,7 +65,21 @@ model Video {
   views               Int
   starRating          Json
 
-  createdAt           DateTime  @default(now())
-  updatedAt           DateTime  @updatedAt
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
   publishedAt         DateTime
+}
+
+enum VideoStatus {
+  UPCOMING
+  PUBLISHED
+  MODERATED
+  LIVE
+  HIDDEN
+  DELETED
+}
+
+enum VideoType {
+  VIDEO
+  SHORT
 }
