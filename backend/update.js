@@ -2,7 +2,7 @@ import delay from 'delay';
 import minimost from 'minimost';
 import pluralize from 'pluralize';
 
-import { getActiveChannels, saveVideos } from './db.js';
+import { getActiveChannels, saveVideos } from '../lib/db.js';
 import { getRecentVideosFromRSS } from './lib.js';
 
 import config from './config.js';
@@ -36,7 +36,7 @@ const options = minimost(process.argv.slice(2), {
     const videos = await getRecentVideosFromRSS(channel);
 
     const newVideos = await saveVideos({ videos, channel });
-    totalNewVideos += newVideos.length;
+    if (newVideos?.length) totalNewVideos += newVideos.length;
 
     await delay(config.RSS_FEED_UPDATE_DELAY_MS);
   }

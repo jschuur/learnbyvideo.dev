@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 import 'dotenv/config';
 
-import prisma from './prisma.js';
-import { saveVideos, saveChannel } from './db.js';
+import prisma from '../lib/prisma.js';
+import { saveVideos, saveChannel } from '../lib/db.js';
 import { getRecentVideosFromRSS, getChannelInfo, getVideoInfo } from './lib.js';
 import { error } from './util.js';
 

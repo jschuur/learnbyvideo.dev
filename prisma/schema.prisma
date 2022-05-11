@@ -34,12 +34,14 @@ model Channel {
   videos              Video[]
 }
 
+// Active: checked for updates
+// Paused: listed, but not checked for updates
 enum ChannelStatus {
-  ACTIVE
-  PAUSED
-  MODERATED
-  HIDDEN
-  ARCHIVED
+  ACTIVE        // checked for updates
+  PAUSED        // listed, but not checked for updates
+  MODERATED     // listed and checked for updates, new videos first marked as moderated
+  HIDDEN        // not listed
+  ARCHIVED      // not listed and nort checked for updates
 }
 
 enum ChannelType {
@@ -55,8 +57,8 @@ model Video {
   youtubeId           String       @unique
   channel             Channel      @relation(fields: [channelId], references: [id])
   channelId           Int
-  status              VideoStatus  @default(value: PUBLISHED)
   type                VideoType    @default(value: VIDEO)
+  status              VideoStatus  @default(value: PUBLISHED)
 
   title               String
   description         String?
@@ -71,12 +73,12 @@ model Video {
 }
 
 enum VideoStatus {
-  UPCOMING
-  PUBLISHED
-  MODERATED
-  LIVE
-  HIDDEN
-  DELETED
+  UPCOMING            // not yet published (YouTube Premiere)
+  PUBLISHED           // pubblished on YouTube
+  MODERATED           // video is awaiting moderation before being listed (becomes PUBLISHED or HIDDEN)
+  LIVE                // video is currently srtreaming live on YouTube
+  HIDDEN              // video not listed (on learnbyvideo.dev)
+  DELETED             // channel removed a previously published video
 }
 
 enum VideoType {
