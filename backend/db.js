@@ -1,24 +1,22 @@
+import delay from 'delay';
 import pluralize from 'pluralize';
 import { merge } from 'lodash-es';
+import { VideoType } from '@prisma/client';
 
-import prisma from './prisma.js';
+import prisma from '../prisma/prisma.js';
 
-import { error } from '../backend/util.js';
+import { getChannelInfo, getRecentVideosFromRSS } from './youtube.js';
+import { error, isShort } from './util.js';
 
-export const getActiveChannels = (options) =>
-  getChannels({ ...options, where: { status: { in: ['ACTIVE', 'HIDDEN'] } } });
+import config from './config.js';
 
-export function getChannels({ minLastUpdated, maxLastUpdated, select, where } = {}) {
-  const query = {
-    where,
-    select,
-  };
+export const getActiveChannels = ({ where, ...options }) =>
+  getChannels({ ...options, where: merge(where, { status: { in: ['ACTIVE', 'HIDDEN'] } }) });
 
-  if (select) where.select = select;
-
-  // TODO: do this successively, in some scenarios there is a low chance you miss an update, due to the amount of secondd that passed
+export function getChannels({ minLastUpdated, maxLastUpdated, ...queryOptions } = {}) {
+  // TODO: do this successively, in some scenarios there is a low chance you miss an update, due to the amount of seconds that passed
   if (minLastUpdated && maxLastUpdated)
-    merge(query.where, {
+    merge(queryOptions.where, {
       videos: {
         some: {
           publishedAt: {
@@ -33,7 +31,7 @@ export function getChannels({ minLastUpdated, maxLastUpdated, select, where } = 
       },
     });
   else if (minLastUpdated)
-    merge(query.where, {
+    merge(queryOptions.where, {
       videos: {
         some: {
           publishedAt: {
@@ -43,7 +41,7 @@ export function getChannels({ minLastUpdated, maxLastUpdated, select, where } = 
       },
     });
   else if (maxLastUpdated)
-    merge(query.where, {
+    merge(queryOptions.where, {
       videos: {
         every: {
           publishedAt: {
@@ -53,7 +51,7 @@ export function getChannels({ minLastUpdated, maxLastUpdated, select, where } = 
       },
     });
 
-  return prisma.channel.findMany(query);
+  return prisma.channel.findMany(queryOptions);
 }
 
 export async function saveVideos({ videos, channel }) {
@@ -102,6 +100,8 @@ export async function saveVideos({ videos, channel }) {
   return newVideos;
 }
 
+export const updateVideo = (video) => prisma.video.update({ where: { id: video.id }, data: video });
+
 export async function saveChannel(channel) {
   return await prisma.channel.upsert({
     where: {
@@ -110,4 +110,37 @@ export async function saveChannel(channel) {
     create: channel,
     update: channel,
   });
+}
+
+export async function addChannelByYouTubeChannelId(channelId) {
+  console.log(`Processing https://playmob.com/${channelId}`);
+
+  try {
+    const channelData = await getChannelInfo(channelId);
+    await saveChannel(channelData);
+
+    console.log(`Adding latest videos for ${channelData.channelName}`);
+
+    const channel = await prisma.channel.findUnique({ where: { youtubeId: channelId } });
+    const videos = await getRecentVideosFromRSS(channel);
+
+    const newVideos = await saveVideos({ videos, channel });
+
+    if (newVideos.length) {
+      console.log('Identifying Shorts...');
+
+      for (const video of newVideos) {
+        // TODO: Check for #shorts hashtag in title first
+        if (await isShort(video)) {
+          video.type = VideoType.SHORT;
+          console.log(`Short: ${video.title}`);
+          await updateVideo(video);
+        }
+
+        await delay(config.SHORTS_CHECK_DELAY_MS);
+      }
+    }
+  } catch ({ message }) {
+    console.error(`Error processing channel ID ${channelId}: ${message}`);
+  }
 }

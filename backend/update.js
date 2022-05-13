@@ -2,10 +2,12 @@ import delay from 'delay';
 import minimost from 'minimost';
 import pluralize from 'pluralize';
 
-import { getActiveChannels, saveVideos } from '../lib/db.js';
-import { getRecentVideosFromRSS } from './lib.js';
+import { getActiveChannels, saveVideos, updateVideo } from './db.js';
+import { getRecentVideosFromRSS } from './youtube.js';
+import { isShort } from './util.js';
 
 import config from './config.js';
+import { VideoType } from '@prisma/client';
 
 const options = minimost(process.argv.slice(2), {
   string: ['min-last-updated', 'max-last-updated'],
@@ -36,7 +38,15 @@ const options = minimost(process.argv.slice(2), {
     const videos = await getRecentVideosFromRSS(channel);
 
     const newVideos = await saveVideos({ videos, channel });
-    if (newVideos?.length) totalNewVideos += newVideos.length;
+    if (newVideos?.length) {
+      totalNewVideos += newVideos.length;
+
+      for (const video of newVideos)
+        if (await isShort(video)) {
+          video.type = VideoType.SHORT;
+          await updateVideo(video);
+        }
+    }
 
     await delay(config.RSS_FEED_UPDATE_DELAY_MS);
   }

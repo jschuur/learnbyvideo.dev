@@ -1,28 +1,9 @@
 #!/usr/bin/env node
 import 'dotenv/config';
 
-import prisma from '../lib/prisma.js';
-import { saveVideos, saveChannel } from '../lib/db.js';
-import { getRecentVideosFromRSS, getChannelInfo, getVideoInfo } from './lib.js';
+import { addChannelByYouTubeChannelId } from './db.js';
+import { getVideoInfo } from './youtube.js';
 import { error } from './util.js';
-
-async function updateChannel(channelId) {
-  console.log(`Processing channel ID ${channelId}`);
-
-  try {
-    const channelData = await getChannelInfo(channelId);
-    await saveChannel(channelData);
-
-    console.log(`Adding latest videos for ${channelData.channelName}`);
-
-    const channel = await prisma.channel.findUnique({ where: { youtubeId: channelId } });
-    const videos = await getRecentVideosFromRSS(channel);
-
-    await saveVideos({ videos, channel });
-  } catch ({ message }) {
-    console.error(`Error processing channel ID ${channelId}: ${message}`);
-  }
-}
 
 (async () => {
   for (const id of process.argv.slice(2)) {
@@ -31,9 +12,9 @@ async function updateChannel(channelId) {
         ? id
         : (await getVideoInfo(id)).data.items[0].snippet.channelId;
 
-      await updateChannel(youtubeId);
+      await addChannelByYouTubeChannelId(youtubeId);
     } catch ({ message }) {
-      error(`Couldn't add channel ${id}: ${message}`);
+      error(`Couldn't add channel from ID ${id}: ${message}`);
     }
   }
 

@@ -1,9 +1,9 @@
-import { DateTimeResolver, JSONResolver } from 'graphql-scalars';
+import { DateTimeResolver, JSONObjectResolver } from 'graphql-scalars';
 import { VideoStatus, ChannelStatus } from '@prisma/client';
 
 export const resolvers = {
   DateTime: DateTimeResolver,
-  JSON: JSONResolver,
+  JSON: JSONObjectResolver,
 
   Query: {
     allChannels: (_parent, _args, ctx) => ctx.prisma.channel.findMany(),
