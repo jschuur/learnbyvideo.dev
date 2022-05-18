@@ -1,7 +1,7 @@
 import { DateTimeResolver, JSONObjectResolver } from 'graphql-scalars';
 import { VideoStatus, ChannelStatus } from '@prisma/client';
 
-import config from '../backend/config';
+import config from '../backend/config.mjs';
 
 export const resolvers = {
   DateTime: DateTimeResolver,

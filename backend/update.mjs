@@ -3,10 +3,10 @@ import { map } from 'lodash-es';
 import minimost from 'minimost';
 import pluralize from 'pluralize';
 
-import { getActiveChannels, saveVideos, updateVideo, updateChannel } from './db.js';
-import { getRecentVideosFromRSS } from './youtube.js';
+import { getActiveChannels, saveVideos, updateVideo, updateChannel } from './db.mjs';
+import { getRecentVideosFromRSS } from './youtube.mjs';
 
-import config from './config.js';
+import config from './config.mjs';
 import { VideoType } from '@prisma/client';
 import { uniq } from 'lodash-es';
 

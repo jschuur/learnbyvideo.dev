@@ -3,13 +3,13 @@ import pluralize from 'pluralize';
 import { merge } from 'lodash-es';
 import { VideoType, ChannelStatus, VideoStatus } from '@prisma/client';
 
-import prisma from '../prisma/prisma.js';
+import prisma from '../prisma/prisma.mjs';
 
-import { getChannelInfo, getRecentVideosFromRSS, videoStatus } from './youtube.js';
-import { error } from './util.js';
-import { isShort } from './youtube.js';
+import { getChannelInfo, getRecentVideosFromRSS, videoStatus } from './youtube.mjs';
+import { error } from './util.mjs';
+import { isShort } from './youtube.mjs';
 
-import config from './config.js';
+import config from './config.mjs';
 
 export const getActiveChannels = ({ where = {}, ...options } = {}) =>
   getChannels({

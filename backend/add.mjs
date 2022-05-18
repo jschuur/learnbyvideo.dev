@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 import 'dotenv/config';
 
-import { addChannelByYouTubeChannelId, updateChannel } from './db.js';
-import { getVideoInfo } from './youtube.js';
-import { error } from './util.js';
+import { addChannelByYouTubeChannelId, updateChannel } from './db.mjs';
+import { getVideoInfo } from './youtube.mjs';
+import { error } from './util.mjs';
 
 (async () => {
   const lastCheckedAt = new Date();
