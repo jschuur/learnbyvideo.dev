@@ -10,10 +10,30 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum Category {
+  TUTORIAL
+  LIVECODING
+  SOFTSKILL
+  SHOW
+  TALK
+  VLOG
+  DOCUMENTARY
+  UPDATE            // Channel updates
+  ANNOUNCEMENT      // Product/release announcements
+  NEWS              // e.g. the Fireship news updates
+  QANDA
+  INTERVIEW
+  REVIEW
+  PORTFOLIOREVIEW
+  OTHER
+  NONE              // Manually tagged as having no category after review
+}
+
 model Channel {
   id                  Int            @id @default(autoincrement())
   youtubeId           String         @unique
   channelName         String
+  authorName          String?
   type                ChannelType    @default(value: INDIVIDUAL)
   status              ChannelStatus  @default(value: ACTIVE)
   customUrl           String?        @unique
@@ -22,16 +42,17 @@ model Channel {
   thumbnail           String
   thumbnailMedium     String
   thumbnailHigh       String
-
+  defaultCategory     Category?
+  defaultLanguage     String         @default("en")
   statistics          Json
-
   createdAt           DateTime       @default(now())
   updatedAt           DateTime       @updatedAt
-
+  lastCheckedAt       DateTime?
+  lastPublishedAt     DateTime?
   // YouTube channel launch date
   publishedAt         DateTime
-
   videos              Video[]
+  links               ChannelLink[]
 }
 
 // Active: checked for updates
@@ -49,7 +70,36 @@ enum ChannelType {
   INDIVIDUAL
   COLLABORATION
   SHOW
+  EVENT
   OTHER
+}
+
+model ChannelLink {
+  id                  Int          @id @default(autoincrement())
+  channel             Channel      @relation(fields: [channelId], references: [id])
+  channelId           Int
+  url                 String
+  title               String?
+  type                ChannelLinkType
+}
+
+enum ChannelLinkType {
+  Twitter
+  FacebooK
+  LinkedIn
+  GitHub
+  Twitch
+  Instagram
+  Homepage
+  Blog
+  YouTube
+  Patreon
+  Podcast
+  Shop
+  Discord
+  Links         // Linktree etc.
+  Link
+  TikTok
 }
 
 model Video {
@@ -59,14 +109,13 @@ model Video {
   channelId           Int
   type                VideoType    @default(value: VIDEO)
   status              VideoStatus  @default(value: PUBLISHED)
-
+  category            Category?
+  language            String?
   title               String
   description         String?
   thumbnail           String
-
   views               Int
   starRating          Json
-
   createdAt           DateTime     @default(now())
   updatedAt           DateTime     @updatedAt
   publishedAt         DateTime

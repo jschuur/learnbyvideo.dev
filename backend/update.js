@@ -1,52 +1,61 @@
 import delay from 'delay';
+import { map } from 'lodash-es';
 import minimost from 'minimost';
 import pluralize from 'pluralize';
 
-import { getActiveChannels, saveVideos, updateVideo } from './db.js';
+import { getActiveChannels, saveVideos, updateVideo, updateChannel } from './db.js';
 import { getRecentVideosFromRSS } from './youtube.js';
-import { isShort } from './util.js';
 
 import config from './config.js';
 import { VideoType } from '@prisma/client';
+import { uniq } from 'lodash-es';
 
 const options = minimost(process.argv.slice(2), {
   string: ['min-last-updated', 'max-last-updated'],
   alias: {
     m: 'min-last-updated',
     x: 'max-last-updated',
+    l: 'limit',
   },
 }).flags;
 
 (async () => {
   const { minLastUpdated, maxLastUpdated } = options;
   let totalNewVideos = 0;
+  const lastCheckedAt = new Date();
 
   console.log(`Looking for new videos... (${JSON.stringify({ minLastUpdated, maxLastUpdated })})`);
 
   const channels = await getActiveChannels({
-    minLastUpdated: minLastUpdated
-      ? new Date(Date.now() - 1000 * 60 * 60 * 24 * parseInt(options.minLastUpdated, 10))
-      : undefined,
-    maxLastUpdated: maxLastUpdated
-      ? new Date(Date.now() - 1000 * 60 * 60 * 24 * parseInt(options.maxLastUpdated, 10))
-      : undefined,
+    where: {
+      OR: [
+        {
+          lastPublishedAt: {
+            gte: minLastUpdated
+              ? new Date(Date.now() - 1000 * 60 * 60 * 24 * parseInt(options.minLastUpdated, 10))
+              : new Date(0),
+            lt: maxLastUpdated
+              ? new Date(Date.now() - 1000 * 60 * 60 * 24 * parseInt(options.maxLastUpdated, 10))
+              : new Date(),
+          },
+        },
+        {
+          lastPublishedAt: null,
+        },
+      ],
+    },
+    take: options.limit,
   });
 
-  console.log(`Using ${pluralize('channel', channels.length, false)}`);
+  console.log(`Using ${pluralize('channel', channels.length, true)}`);
 
   for (const channel of channels) {
     const videos = await getRecentVideosFromRSS(channel);
 
     const newVideos = await saveVideos({ videos, channel });
-    if (newVideos?.length) {
-      totalNewVideos += newVideos.length;
+    await updateChannel({ id: channel.id, lastCheckedAt });
 
-      for (const video of newVideos)
-        if (await isShort(video)) {
-          video.type = VideoType.SHORT;
-          await updateVideo(video);
-        }
-    }
+    totalNewVideos += newVideos?.length || 0;
 
     await delay(config.RSS_FEED_UPDATE_DELAY_MS);
   }

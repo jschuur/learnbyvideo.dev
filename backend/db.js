@@ -1,60 +1,28 @@
 import delay from 'delay';
 import pluralize from 'pluralize';
 import { merge } from 'lodash-es';
-import { VideoType } from '@prisma/client';
+import { VideoType, ChannelStatus, VideoStatus } from '@prisma/client';
 
 import prisma from '../prisma/prisma.js';
 
-import { getChannelInfo, getRecentVideosFromRSS } from './youtube.js';
-import { error, isShort } from './util.js';
+import { getChannelInfo, getRecentVideosFromRSS, videoStatus } from './youtube.js';
+import { error } from './util.js';
+import { isShort } from './youtube.js';
 
 import config from './config.js';
 
-export const getActiveChannels = ({ where, ...options }) =>
-  getChannels({ ...options, where: merge(where, { status: { in: ['ACTIVE', 'HIDDEN'] } }) });
+export const getActiveChannels = ({ where = {}, ...options } = {}) =>
+  getChannels({
+    ...options,
+    where: merge(where, { status: { in: ['ACTIVE', 'HIDDEN'] } }),
+    orderBy: { lastPublishedAt: 'desc' },
+  });
 
-export function getChannels({ minLastUpdated, maxLastUpdated, ...queryOptions } = {}) {
-  // TODO: do this successively, in some scenarios there is a low chance you miss an update, due to the amount of seconds that passed
-  if (minLastUpdated && maxLastUpdated)
-    merge(queryOptions.where, {
-      videos: {
-        some: {
-          publishedAt: {
-            gte: maxLastUpdated,
-          },
-        },
-        none: {
-          publishedAt: {
-            gte: minLastUpdated,
-          },
-        },
-      },
-    });
-  else if (minLastUpdated)
-    merge(queryOptions.where, {
-      videos: {
-        some: {
-          publishedAt: {
-            gte: minLastUpdated,
-          },
-        },
-      },
-    });
-  else if (maxLastUpdated)
-    merge(queryOptions.where, {
-      videos: {
-        every: {
-          publishedAt: {
-            lt: maxLastUpdated,
-          },
-        },
-      },
-    });
+export const getChannels = (queryOptions) => prisma.channel.findMany(queryOptions);
 
-  return prisma.channel.findMany(queryOptions);
-}
+export async function saveVideos({ videos, channel, skipShortDetection = false }) {
+  let newVideos = [];
 
-export async function saveVideos({ videos, channel }) {
   if (!videos?.length || !channel) return;
 
   // Get the incrementing video ID to identify if an upsert added a new video
@@ -68,16 +36,18 @@ export async function saveVideos({ videos, channel }) {
       },
     })
   ).id;
-  let newVideos = [];
 
   for (const video of videos) {
     try {
-      const res = await prisma.video.upsert({
+      const newVideo = await prisma.video.upsert({
         where: {
           youtubeId: video.youtubeId,
         },
         create: {
           ...video,
+          category: channel.defaultCategory || undefined,
+          status: videoStatus({ channel, video }),
+          language: channel.defaultLanguage || undefined,
           channelId: channel.id,
         },
         update: {
@@ -86,16 +56,38 @@ export async function saveVideos({ videos, channel }) {
         },
       });
 
-      if (res.id > lastVideoId) {
-        newVideos.push(res);
+      if (newVideo.id > lastVideoId) {
+        newVideos.push(newVideo);
+
         console.log(`  New video: ${video.title}`);
+
+        // Look for YouTube Shorts
+        if (!skipShortDetection && (await isShort(video))) {
+          console.log('  ...is Short');
+
+          video.type = VideoType.SHORT;
+          await Promise.allSettled([delay(config.SHORTS_CHECK_DELAY_MS), updateVideo(video)]);
+        }
       }
     } catch ({ message }) {
       error(`Couldn't save video update for '${video.title}': ${message}`);
     }
   }
-  if (newVideos.length)
+
+  if (newVideos.length) {
+    // Update the latestPublishedAt date for the channel
+    const latestVideo = await prisma.video.findFirst({
+      where: {
+        channelId: channel.id,
+      },
+      orderBy: {
+        publishedAt: 'desc',
+      },
+    });
+    await updateChannel({ id: latestVideo.channelId, lastPublishedAt: latestVideo.publishedAt });
+
     console.log(`Found ${pluralize('video', newVideos.length, true)} for ${channel.channelName}`);
+  }
 
   return newVideos;
 }
@@ -112,35 +104,29 @@ export async function saveChannel(channel) {
   });
 }
 
-export async function addChannelByYouTubeChannelId(channelId) {
-  console.log(`Processing https://playmob.com/${channelId}`);
+export async function addChannelByYouTubeChannelId({ youtubeId, lastCheckedAt }) {
+  console.log(`Processing https://youtube.com/${youtubeId}`);
 
   try {
-    const channelData = await getChannelInfo(channelId);
-    await saveChannel(channelData);
+    const channelData = await getChannelInfo(youtubeId);
+    let channel = await saveChannel(channelData);
 
-    console.log(`Adding latest videos for ${channelData.channelName}`);
+    console.log(`Adding latest videos for ${channel.channelName}`);
 
-    const channel = await prisma.channel.findUnique({ where: { youtubeId: channelId } });
     const videos = await getRecentVideosFromRSS(channel);
+    await saveVideos({ videos, channel });
 
-    const newVideos = await saveVideos({ videos, channel });
+    if (lastCheckedAt) {
+      channel.lastCheckedAt = lastCheckedAt;
 
-    if (newVideos.length) {
-      console.log('Identifying Shorts...');
-
-      for (const video of newVideos) {
-        // TODO: Check for #shorts hashtag in title first
-        if (await isShort(video)) {
-          video.type = VideoType.SHORT;
-          console.log(`Short: ${video.title}`);
-          await updateVideo(video);
-        }
-
-        await delay(config.SHORTS_CHECK_DELAY_MS);
-      }
+      channel = await updateChannel({ id: channel.id, lastCheckedAt });
     }
+
+    return channel;
   } catch ({ message }) {
-    console.error(`Error processing channel ID ${channelId}: ${message}`);
+    console.error(`Error processing channel ID ${youtubeId}: ${message}`);
   }
 }
+
+export const updateChannel = (channel) =>
+  prisma.channel.update({ where: { id: channel.id }, data: channel });
