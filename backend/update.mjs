@@ -1,3 +1,5 @@
+import 'dotenv/config';
+
 import delay from 'delay';
 import { map } from 'lodash-es';
 import minimost from 'minimost';

@@ -19,6 +19,4 @@ import { error } from './util.mjs';
       error(`Couldn't add channel from ID ${id}: ${message}`);
     }
   }
-
-  await prisma.$disconnect();
 })();
