@@ -8,12 +8,20 @@
     "start": "next start",
     "lint": "next lint",
     "update:videos": "node backend/update.mjs",
-    "add:channels": "node backend/add.mjs $1"
+    "add:channels": "node backend/add.mjs $1",
+    "db:migrate": "prisma migrate dev",
+    "db:migrate:prod": "dotenv -e .env.production -- prisma migrate deploy",
+    "db:dump:local": "pg_dump -d learnbyvideodev -Fc -f tmp/dbdump_local_`date +\"%Y-%m-%d_%H:%M:%S\"`.dump",
+    "db:dump:local:latest": "dotenv cross-var pg_dump -- -d '%DATABASE_URL%' -Fc -f tmp/dbdump_local_latest.dump",
+    "db:dump:prod": "dotenv -e .env.production cross-var -- pg_dump -d '%DATABASE_URL%' -Fc -f tmp/dbdump_prod_latest.dump",
+    "db:push:prod": "dotenv -e .env.production cross-var -- pg_restore --no-acl --no-owner --clean -d '%DATABASE_URL%' tmp/dbdump_local_latest.dump",
+    "db:push": "npm run db:dump:local:latest && npm run db:push:prod"
   },
   "dependencies": {
     "@googleapis/youtube": "^4.2.0",
     "@prisma/client": "^3.14.0",
     "apollo-server-micro": "^3.7.0",
+    "cross-var": "^1.1.0",
     "delay": "^5.0.0",
     "dotenv": "^16.0.1",
     "graphql": "^16.5.0",
@@ -30,6 +38,7 @@
     "rss-parser": "^3.12.0"
   },
   "devDependencies": {
+    "dotenv-cli": "^5.1.0",
     "eslint": "8.15.0",
     "eslint-config-next": "12.1.6",
     "prisma": "^3.14.0"
