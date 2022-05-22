@@ -7,3 +7,9 @@ export async function createContext({ req, res }) {
     prisma,
   };
 }
+
+export async function contextResolver(ctx) {
+  ctx.prisma = prisma;
+
+  return ctx;
+}
