@@ -8,6 +8,7 @@ import VideoGrid from '../components/VideoGrid.js';
 export default function HomePage({ videos }) {
   return (
     <div className='container mx-auto px-10'>
+      <h1 className='font-header text-center text-3xl py-4'>Recent Development Videos</h1>
       <VideoGrid videos={videos} />
 
       <Footer />
@@ -22,7 +23,7 @@ export async function getStaticProps(context) {
   const response = await client.query({
     query: gql`
       query Query {
-        recentVideos {
+        recentVideos(count: 48) {
           title
           youtubeId
           publishedAt

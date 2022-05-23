@@ -2,6 +2,11 @@
 @tailwind components;
 @tailwind utilities;
 
+@import "@fontsource/inter";
+@import "@fontsource/inter/600.css";
+
+@import "@fontsource/lato";
+
 html,
 body {
   padding: 0;
