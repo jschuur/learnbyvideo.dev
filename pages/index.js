@@ -5,13 +5,13 @@ import { createStaticApolloClient } from '../lib/apollo-client-static.js';
 import Footer from '../components/Footer.js';
 import VideoGrid from '../components/VideoGrid.js';
 
-export default function HomePage({ videos }) {
+export default function HomePage({ videos, videoCount, channelCount }) {
   return (
     <div className='container mx-auto px-10'>
-      <h1 className='font-header text-center text-3xl py-4'>Recent Development Videos</h1>
+      <h1 className='font-header text-center text-3xl py-8'>Recent Development Videos</h1>
       <VideoGrid videos={videos} />
 
-      <Footer />
+      <Footer videoCount={videoCount} channelCount={channelCount} />
     </div>
   );
 }
@@ -23,7 +23,7 @@ export async function getStaticProps(context) {
   const response = await client.query({
     query: gql`
       query Query {
-        recentVideos(count: 48) {
+        recentVideos(count: ${process.env.NEXT_PUBLIC_VIDEO_GRID_COUNT || 96}) {
           title
           youtubeId
           publishedAt
@@ -32,6 +32,8 @@ export async function getStaticProps(context) {
             channelName
           }
         }
+        videoCount
+        channelCount
       }
     `,
   });
@@ -39,6 +41,8 @@ export async function getStaticProps(context) {
   return {
     props: {
       videos: JSON.parse(JSON.stringify(response.data.recentVideos)),
+      videoCount: response.data.videoCount,
+      channelCount: response.data.channelCount,
     },
   };
 }

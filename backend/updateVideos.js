@@ -87,5 +87,6 @@ async function updateHomePage() {
     )}.`
   );
 
+  // TODO: Only update when there were new videos
   if (process.env.NODE_ENV === 'production') await updateHomePage();
 })();

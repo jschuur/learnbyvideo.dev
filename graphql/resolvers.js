@@ -50,5 +50,7 @@ export const resolvers = {
         where: { id: parseInt(_args.id, 10) },
         include: { channel: true },
       }),
+    videoCount: (_parent, _args, ctx) => ctx.prisma.video.count(),
+    channelCount: (_parent, _args, ctx) => ctx.prisma.channel.count(),
   },
 };

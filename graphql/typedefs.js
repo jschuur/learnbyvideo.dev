@@ -70,5 +70,7 @@ export const typeDefs = gql`
     channel(id: ID): Channel!
     recentVideos(count: Int = 24): [Video]!
     video(id: ID): Video
+    videoCount: Int!
+    channelCount: Int!
   }
 `;
