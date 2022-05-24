@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "update:videos": "NODE_ENV=production node backend/update.mjs",
+    "update:videos": "NODE_ENV=production node backend/updateVideos.mjs",
     "add:channels": "node backend/add.mjs $1",
     "db:migrate": "prisma migrate dev",
     "db:migrate:prod": "dotenv -e .env.production -- prisma migrate deploy",

@@ -1,3 +1,5 @@
+import 'dotenv/config';
+
 import delay from 'delay';
 import { map } from 'lodash-es';
 import minimost from 'minimost';
@@ -87,6 +89,5 @@ async function updateHomePage() {
     )}.`
   );
 
-  // TODO: Only update when there were new videos
-  if (process.env.NODE_ENV === 'production') await updateHomePage();
+  if (process.env.NODE_ENV === 'production' && totalNewVideos) await updateHomePage();
 })();
