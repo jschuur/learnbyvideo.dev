@@ -17,6 +17,7 @@ export const resolvers = {
             },
           },
         },
+        include: { videos: true, links: true },
       }),
     channel: (_parent, _args, ctx) =>
       ctx.prisma.channel.findUnique({
@@ -41,7 +42,11 @@ export const resolvers = {
           publishedAt: 'desc',
         },
         include: {
-          channel: true,
+          channel: {
+            include: {
+              links: true,
+            },
+          },
         },
         take: Math.min(_args.count, config.GRAPHQL_MAX_RECENT_VIDEOS),
       }),
