@@ -1,0 +1,5 @@
+-- AlterTable
+ALTER TABLE "Video" ADD COLUMN     "durationSeconds" INTEGER NOT NULL DEFAULT -1,
+ALTER COLUMN "duration" DROP NOT NULL,
+ALTER COLUMN "duration" DROP DEFAULT,
+ALTER COLUMN "duration" SET DATA TYPE TEXT;

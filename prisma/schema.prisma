@@ -30,29 +30,34 @@ enum Category {
 }
 
 model Channel {
-  id                  Int            @id @default(autoincrement())
-  youtubeId           String         @unique
-  channelName         String
-  authorName          String?
-  type                ChannelType    @default(value: INDIVIDUAL)
-  status              ChannelStatus  @default(value: ACTIVE)
-  customUrl           String?        @unique
-  description         String?
-  country             String?
-  thumbnail           String
-  thumbnailMedium     String
-  thumbnailHigh       String
-  defaultCategory     Category?
-  defaultLanguage     String         @default("en")
-  statistics          Json
-  createdAt           DateTime       @default(now())
-  updatedAt           DateTime       @updatedAt
-  lastCheckedAt       DateTime?
-  lastPublishedAt     DateTime?
+  id                      Int             @id @default(autoincrement())
+  youtubeId               String          @unique
+  channelName             String
+  authorName              String?
+  type                    ChannelType     @default(value: INDIVIDUAL)
+  status                  ChannelStatus   @default(value: ACTIVE)
+  customUrl               String?         @unique
+  description             String?
+  country                 String?
+  thumbnail               String?
+  thumbnailMedium         String?
+  thumbnailHigh           String?
+  defaultCategory         Category?
+  defaultLanguage         String          @default("en")
+  statistics              Json?
+  viewCount               Int             @default(-1)
+  subscriberCount         Int             @default(-1)
+  hiddenSubscriberCount   Boolean         @default(false)
+  videoCount              Int             @default(-1)
+  createdAt               DateTime        @default(now())
+  updatedAt               DateTime        @updatedAt
+  lastCheckedAt           DateTime?
+  lastPublishedAt         DateTime?
   // YouTube channel launch date
-  publishedAt         DateTime
-  videos              Video[]
-  links               ChannelLink[]
+  publishedAt             DateTime
+  crawlState              CrawlState      @default(PENDING)
+  videos                  Video[]
+  links                   ChannelLink[]
 }
 
 // Active: checked for updates
@@ -72,6 +77,12 @@ enum ChannelType {
   SHOW
   EVENT
   OTHER
+}
+
+enum CrawlState {
+  PENDING
+  COMPLETED
+  ERROR
 }
 
 model ChannelLink {
@@ -110,14 +121,20 @@ model Video {
   type                VideoType    @default(value: VIDEO)
   status              VideoStatus  @default(value: PUBLISHED)
   category            Category?
+  youtubeTags         String[]
   language            String?
   title               String
   description         String?
-  thumbnail           String
-  views               Int
-  starRating          Json
-  createdAt           DateTime     @default(now())
-  updatedAt           DateTime     @updatedAt
+  thumbnail           String?
+  duration            String?
+  durationSeconds     Int           @default(-1)
+  views               Int           @default(-1)
+  viewCount           Int           @default(-1)
+  likeCount           Int           @default(-1)
+  commentCount        Int           @default(-1)
+  starRating          Json?
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
   publishedAt         DateTime
 }
 
@@ -133,4 +150,19 @@ enum VideoStatus {
 enum VideoType {
   VIDEO
   SHORT
+}
+
+model QuotaUsage {
+  id          Int          @id @default(autoincrement())
+  date        String
+  endpoint    QuotaUsageEndpoints
+  parts       String?
+  points      Int
+  task        String?
+}
+
+enum QuotaUsageEndpoints {
+  CHANNELSLIST
+  PLAYLISTITEMSLIST
+  VIDEOSLIST
 }

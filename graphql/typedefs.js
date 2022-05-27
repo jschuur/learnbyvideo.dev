@@ -4,13 +4,6 @@ export const typeDefs = gql`
   scalar DateTime
   scalar JSON
 
-  type Statistics {
-    viewCount: Int
-    videoCount: Int
-    subscriberCount: Int
-    hiddenSubscriberCount: Boolean
-  }
-
   type Channel {
     id: ID!
     youtubeId: String!
@@ -26,12 +19,16 @@ export const typeDefs = gql`
     thumbnailHigh: String!
     defaultCategory: String
     defaultLanguage: String
-    statistics: Statistics!
+    viewCount: Int
+    subscriberCount: Int
+    hiddenSubscriberCount: Boolean
+    videoCount: Int!
     createdAt: DateTime!
     updatedAt: DateTime!
     publishedAt: DateTime!
     lastCheckedAt: DateTime
     lastPublishedAt: DateTime
+    crawlState: String
 
     videos: [Video]!
     links: [ChannelLink]
@@ -52,14 +49,17 @@ export const typeDefs = gql`
     channel: Channel!
     channelId: Int!
     category: String
+    youtubeTags: [String]!
     language: String
     title: String!
     status: String!
     type: String!
     description: String
-    thumbnail: String!
-    views: Int!
-    starRating: JSON!
+    duration: String!
+    durationSeconds: Int!
+    viewCount: Int!
+    likeCount: Int!
+    commentCount: Int!
     createdAt: DateTime!
     updatedAt: DateTime!
     publishedAt: DateTime!

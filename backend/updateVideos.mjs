@@ -1,7 +1,7 @@
 import 'dotenv/config';
 
 import delay from 'delay';
-import { map } from 'lodash-es';
+import { map, uniq } from 'lodash-es';
 import minimost from 'minimost';
 import fetch from 'node-fetch';
 import pluralize from 'pluralize';
@@ -11,7 +11,6 @@ import { getRecentVideosFromRSS } from './youtube.mjs';
 
 import config from './config.mjs';
 import { VideoType } from '@prisma/client';
-import { uniq } from 'lodash-es';
 
 const options = minimost(process.argv.slice(2), {
   string: ['min-last-updated', 'max-last-updated'],

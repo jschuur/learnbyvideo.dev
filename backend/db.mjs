@@ -4,10 +4,14 @@ import { merge } from 'lodash-es';
 import { VideoType, ChannelStatus, VideoStatus } from '@prisma/client';
 
 import prisma from '../prisma/prisma.mjs';
-
-import { getChannelInfo, getRecentVideosFromRSS, videoStatus } from './youtube.mjs';
+import {
+  getChannelInfo,
+  getRecentVideosFromRSS,
+  extractChannelInfo,
+  videoStatus,
+  isShort,
+} from './youtube.mjs';
 import { error } from './util.mjs';
-import { isShort } from './youtube.mjs';
 
 import config from './config.mjs';
 
@@ -19,6 +23,7 @@ export const getActiveChannels = ({ where = {}, ...options } = {}) =>
   });
 
 export const getChannels = (queryOptions) => prisma.channel.findMany(queryOptions);
+export const getChannel = (queryOptions) => prisma.channel.findUnique(queryOptions);
 
 export async function saveVideos({ videos, channel, skipShortDetection = false }) {
   let newVideos = [];
@@ -46,8 +51,8 @@ export async function saveVideos({ videos, channel, skipShortDetection = false }
         create: {
           ...video,
           category: channel.defaultCategory || undefined,
-          status: videoStatus({ channel, video }),
-          language: channel.defaultLanguage || undefined,
+          status: video.status || videoStatus({ channel, video }),
+          language: video.language || channel.defaultLanguage || undefined,
           channelId: channel.id,
         },
         update: {
@@ -105,7 +110,7 @@ export async function saveChannel(channel) {
 }
 
 export async function addChannelByYouTubeChannelId({ youtubeId, lastCheckedAt }) {
-  console.log(`Processing https://youtube.com/${youtubeId}`);
+  console.log(`Processing https://youtube.com/channel/${youtubeId}`);
 
   try {
     const channelData = await getChannelInfo(youtubeId);
@@ -130,3 +135,39 @@ export async function addChannelByYouTubeChannelId({ youtubeId, lastCheckedAt })
 
 export const updateChannel = (channel) =>
   prisma.channel.update({ where: { id: channel.id }, data: channel });
+
+export const updateChannels = (channels) =>
+  Promise.all(
+    channels.map((channel) =>
+      prisma.channel.update({
+        where: {
+          youtubeId: channel.youtubeId,
+        },
+        data: channel,
+      })
+    )
+  );
+
+export const addQuotaUsage = ({ endpoint, ...rest }) =>
+  prisma.quotaUsage.create({
+    data: {
+      date: new Date().toISOString().split('T')[0],
+      endpoint: endpoint.toUpperCase().replace('.', ''),
+      ...rest,
+    },
+  });
+
+export async function todaysQuotaUsage(task) {
+  const where = { date: new Date().toISOString().split('T')[0] };
+
+  if (task) where.task = task;
+
+  const quotaUsage = await prisma.quotaUsage.aggregate({
+    _sum: {
+      points: true,
+    },
+    where,
+  });
+
+  return quotaUsage._sum.points;
+}
