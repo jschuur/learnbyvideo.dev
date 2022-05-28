@@ -4,7 +4,6 @@ export default function Document() {
   return (
     <Html>
       <Head>
-        <title>LearnByVideo.dev - Find the best web development tutorial videos</title>
         {/* Global Site Tag (gtag.js) - Google Analytics */}
         <script
           async

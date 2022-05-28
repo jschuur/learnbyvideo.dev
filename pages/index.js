@@ -34,6 +34,8 @@ export async function getStaticProps(context) {
           youtubeId
           publishedAt
           createdAt
+          duration
+          type
           channel {
             channelName
           }

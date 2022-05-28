@@ -23,6 +23,7 @@
     "@apollo/client": "^3.6.4",
     "@fontsource/inter": "^4.5.10",
     "@fontsource/lato": "^4.5.8",
+    "@fontsource/roboto": "^4.5.7",
     "@googleapis/youtube": "^4.2.0",
     "@graphql-tools/schema": "^8.3.11",
     "@prisma/client": "^3.14.0",
