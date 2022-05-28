@@ -19,15 +19,4 @@ import { extractChannelInfo } from './youtube.mjs';
   });
 
   const results = await updateChannels(channelData.map((channel) => extractChannelInfo(channel)));
-
-  console.log(results.length);
-  console.log(JSON.stringify(results[0], null, 2));
-
-  // console.log(
-  //   `\nFound ${pluralize('new video', totalNewVideos, true)} across ${channels.length} ${pluralize(
-  //     'channel',
-  //     channels.length,
-  //     false
-  //   )}.`
-  // );
 })();

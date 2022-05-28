@@ -38,7 +38,7 @@ export async function getRecentVideosFromRSS(channel) {
 
 export function extractVideoInfo({ item, id, snippet, statistics, contentDetails }) {
   const itemViews = item?.media?.['media:community']?.[0]?.['media:statistics']?.[0]?.['$']?.views;
-  const itemLikes = item?.media?.['media:community']?.[0]?.['media:starRating']?.[0]?.['$'];
+  const itemLikes = item?.media?.['media:community']?.[0]?.['media:starRating']?.[0]?.['$']?.count;
 
   return {
     youtubeId: id || item?.videoId,

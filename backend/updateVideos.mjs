@@ -72,10 +72,13 @@ async function updateHomePage() {
   for (const channel of channels) {
     const videos = await getRecentVideosFromRSS(channel);
 
-    const newVideos = await saveVideos({ videos, channel });
-    await updateChannel({ id: channel.id, lastCheckedAt });
+    if (videos?.length) {
+      const newVideos = await saveVideos({ videos, channel });
 
-    totalNewVideos += newVideos?.length || 0;
+      totalNewVideos += newVideos?.length || 0;
+    }
+
+    await updateChannel({ id: channel.id, lastCheckedAt });
 
     await delay(config.RSS_FEED_UPDATE_DELAY_MS);
   }
