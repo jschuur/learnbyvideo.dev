@@ -7,7 +7,8 @@ import fetch from 'node-fetch';
 import pluralize from 'pluralize';
 
 import { getActiveChannels, saveVideos, updateVideo, updateChannel } from './db.mjs';
-import { getRecentVideosFromRSS } from './youtube.mjs';
+import { getRecentVideosFromRSS, extractVideoInfo } from './youtube.mjs';
+import { youTubeVideosList } from './youtubeApi.mjs';
 
 import config from './config.mjs';
 import { VideoType } from '@prisma/client';
@@ -41,7 +42,7 @@ async function updateHomePage() {
 
 (async () => {
   const { minLastUpdated, maxLastUpdated } = options;
-  let totalNewVideos = 0;
+  let allNewVideos = [];
   const lastCheckedAt = new Date();
 
   console.log(`Looking for new videos... (${JSON.stringify({ minLastUpdated, maxLastUpdated })})`);
@@ -75,7 +76,7 @@ async function updateHomePage() {
     if (videos?.length) {
       const newVideos = await saveVideos({ videos, channel });
 
-      totalNewVideos += newVideos?.length || 0;
+      allNewVideos.push(...newVideos);
     }
 
     await updateChannel({ id: channel.id, lastCheckedAt });
@@ -83,13 +84,26 @@ async function updateHomePage() {
     await delay(config.RSS_FEED_UPDATE_DELAY_MS);
   }
 
+  // Get additional details for all the new videos via YouTube API
+  if (allNewVideos.length) {
+    console.log('Getting new video details...');
+
+    const videoData = await youTubeVideosList({
+      part: 'snippet,statistics,contentDetails',
+      ids: allNewVideos.map((v) => v.youtubeId),
+      task: 'newvideodetails',
+    });
+
+    const videos = videoData.map((video) => extractVideoInfo(video));
+
+    for (const video of videos) await updateVideo(video);
+  }
+
   console.log(
-    `\nFound ${pluralize('new video', totalNewVideos, true)} across ${channels.length} ${pluralize(
-      'channel',
-      channels.length,
-      false
-    )}.`
+    `\nFound ${pluralize('new video', allNewVideos.length, true)} across ${
+      channels.length
+    } ${pluralize('channel', channels.length, false)}.`
   );
 
-  if (process.env.NODE_ENV === 'production' && totalNewVideos) await updateHomePage();
+  if (process.env.NODE_ENV === 'production' && allNewVideos.length) await updateHomePage();
 })();

@@ -26,10 +26,12 @@ export const getActiveChannels = ({ where = {}, ...options } = {}) =>
 export const getChannels = (queryOptions) => prisma.channel.findMany(queryOptions);
 export const getChannel = (queryOptions) => prisma.channel.findUnique(queryOptions);
 
-export async function saveVideos({ videos, channel, skipShortDetection = false }) {
+export const getVideos = (queryOptions) => prisma.video.findMany(queryOptions);
+
+export async function saveVideos({ videos, channel = {}, skipShortDetection = false }) {
   let newVideos = [];
 
-  if (!videos?.length || !channel) return;
+  if (!videos?.length) return;
 
   // Get the incrementing video ID to identify if an upsert added a new video
   const lastVideoId = (
@@ -51,19 +53,19 @@ export async function saveVideos({ videos, channel, skipShortDetection = false }
         },
         create: {
           ...video,
-          category: channel.defaultCategory || undefined,
+          category: video.category || channel.defaultCategory || undefined,
           status: video.status || videoStatus({ channel, video }),
           language: video.language || channel.defaultLanguage || undefined,
-          channelId: channel.id,
+          channelId: video.chanelId || channel.id,
         },
         update: {
           ...video,
-          channelId: channel.id,
+          channelId: video.channelId || channel.id,
         },
       });
 
       if (newVideo.id > lastVideoId) {
-        newVideos.push(newVideo);
+        newVideos.push({ ...newVideo, channelId: channel.id });
 
         console.log(`  New video: ${video.title}`);
 
@@ -98,7 +100,8 @@ export async function saveVideos({ videos, channel, skipShortDetection = false }
   return newVideos;
 }
 
-export const updateVideo = (video) => prisma.video.update({ where: { id: video.id }, data: video });
+export const updateVideo = (video) =>
+  prisma.video.update({ where: { youtubeId: video.youtubeId }, data: video });
 
 export async function saveChannel(channel) {
   return await prisma.channel.upsert({
