@@ -1,3 +1,5 @@
+import dateFnsTz from 'date-fns-tz';
+const { formatInTimeZone } = dateFnsTz;
 import { chunk, merge } from 'lodash-es';
 import fetch from 'node-fetch';
 import { youtube } from '@googleapis/youtube';
@@ -16,6 +18,9 @@ let quotaUsage = 0;
 
 export const currentQuotaUsage = () => quotaUsage;
 export const resetQuotaUsage = () => (quotaUsage = 0);
+
+export const youtubeQuotaDate = (date) =>
+  formatInTimeZone(date || new Date(), 'America/Los_Angeles', 'yyyy-MM-dd HH:mm:ss');
 
 async function logQuotaUsage({ endpoint, parts, task }) {
   const quotaCost = parts

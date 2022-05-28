@@ -11,6 +11,7 @@ import {
   videoStatus,
   isShort,
 } from './youtube.mjs';
+import { youtubeQuotaDate } from './youtubeApi.mjs';
 import { error } from './util.mjs';
 
 import config from './config.mjs';
@@ -151,14 +152,14 @@ export const updateChannels = (channels) =>
 export const addQuotaUsage = ({ endpoint, ...rest }) =>
   prisma.quotaUsage.create({
     data: {
-      date: new Date().toISOString().split('T')[0],
+      date: youtubeQuotaDate(),
       endpoint: endpoint.toUpperCase().replace('.', ''),
       ...rest,
     },
   });
 
 export async function todaysQuotaUsage(task) {
-  const where = { date: new Date().toISOString().split('T')[0] };
+  const where = { date: { startsWith: youtubeQuotaDate().split(' ')[0] } };
 
   if (task) where.task = task;
 

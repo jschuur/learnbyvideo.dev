@@ -128,7 +128,8 @@ export const uploadPlaylistIdFromChannelId = (youtubeId) => 'UU' + youtubeId.sli
 
 // Turn Youtube's duration format like 'PT11M32S' into something more usable
 export function youtubeDuration(str) {
-  let toSeconds = -1, format ='-';
+  let toSeconds = -1,
+    format = '-';
   const pad = (num) => num.toString().padStart(2, '0');
 
   const matches = str.match(/PT((\d+)H)?((\d+)M)?((\d+)S)?/);
@@ -137,13 +138,11 @@ export function youtubeDuration(str) {
     const [, , hours = 0, , minutes = 0, , seconds = 0] = matches;
     toSeconds = parseInt(hours) * 3600 + parseInt(minutes) * 60 + parseInt(seconds);
 
-    format = hours
-      ? `${hours}:${pad(minutes)}:${pad(seconds)}`
-      : `${minutes}:${pad(seconds)}`;
+    format = hours ? `${hours}:${pad(minutes)}:${pad(seconds)}` : `${minutes}:${pad(seconds)}`;
   }
 
   return {
     toSeconds,
-    format
+    format,
   };
-};
+}
