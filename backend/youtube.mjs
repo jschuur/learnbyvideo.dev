@@ -132,13 +132,18 @@ export function youtubeDuration(str) {
     format = '-';
   const pad = (num) => num.toString().padStart(2, '0');
 
-  const matches = str.match(/PT((\d+)H)?((\d+)M)?((\d+)S)?/);
+  const matches = str.match(/P((\d+)D)?T((\d+)H)?((\d+)M)?((\d+)S)?/);
 
   if (matches) {
-    const [, , hours = 0, , minutes = 0, , seconds = 0] = matches;
-    toSeconds = parseInt(hours) * 3600 + parseInt(minutes) * 60 + parseInt(seconds);
+    const [, , days = 0, , hours = 0, , minutes = 0, , seconds = 0] = matches;
+    toSeconds =
+      parseInt(days) * 86400 + parseInt(hours) * 3600 + parseInt(minutes) * 60 + parseInt(seconds);
 
-    format = hours ? `${hours}:${pad(minutes)}:${pad(seconds)}` : `${minutes}:${pad(seconds)}`;
+    format = days
+      ? `${days}:${pad(hours)}:${pad(minutes)}:${pad(seconds)}`
+      : hours
+      ? `${hours}:${pad(minutes)}:${pad(seconds)}`
+      : `${minutes}:${pad(seconds)}`;
   }
 
   return {
