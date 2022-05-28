@@ -55,7 +55,7 @@ export const typeDefs = gql`
     status: String!
     type: String!
     description: String
-    duration: String!
+    duration: String
     durationSeconds: Int!
     viewCount: Int!
     likeCount: Int!

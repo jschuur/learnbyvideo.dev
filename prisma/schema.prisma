@@ -44,7 +44,6 @@ model Channel {
   thumbnailHigh           String?
   defaultCategory         Category?
   defaultLanguage         String          @default("en")
-  statistics              Json?
   viewCount               Int             @default(-1)
   subscriberCount         Int             @default(-1)
   hiddenSubscriberCount   Boolean         @default(false)
@@ -125,14 +124,11 @@ model Video {
   language            String?
   title               String
   description         String?
-  thumbnail           String?
   duration            String?
   durationSeconds     Int           @default(-1)
-  views               Int           @default(-1)
   viewCount           Int           @default(-1)
   likeCount           Int           @default(-1)
   commentCount        Int           @default(-1)
-  starRating          Json?
   createdAt           DateTime      @default(now())
   updatedAt           DateTime      @updatedAt
   publishedAt         DateTime
