@@ -100,8 +100,10 @@ export async function saveVideos({ videos, channel = {}, skipShortDetection = fa
   return newVideos;
 }
 
-export const updateVideo = (video) =>
-  prisma.video.update({ where: { youtubeId: video.youtubeId }, data: video });
+export const updateVideo = (video) => {
+  console.log({ where: { youtubeId: video.youtubeId }, data: video });
+  return prisma.video.update({ where: { youtubeId: video.youtubeId }, data: video });
+};
 
 export async function saveChannel(channel) {
   return await prisma.channel.upsert({
@@ -123,7 +125,8 @@ export async function addChannelByYouTubeChannelId({ youtubeId, lastCheckedAt })
     console.log(`Adding latest videos for ${channel.channelName}`);
 
     const videos = await getRecentVideosFromRSS(channel);
-    await saveVideos({ videos, channel });
+    if (videos?.length) await saveVideos({ videos, channel });
+    else console.log(`No videos found in RSS feed for ${channel.channelName}`);
 
     if (lastCheckedAt) {
       channel.lastCheckedAt = lastCheckedAt;
