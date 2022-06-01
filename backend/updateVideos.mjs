@@ -5,6 +5,7 @@ import { map, uniq } from 'lodash-es';
 import minimost from 'minimost';
 import fetch from 'node-fetch';
 import pluralize from 'pluralize';
+import prettyMilliseconds from 'pretty-ms';
 
 import { getActiveChannels, saveVideos, updateVideo, updateChannel } from './db.mjs';
 import { getRecentVideosFromRSS, extractVideoInfo } from './youtube.mjs';
@@ -44,6 +45,7 @@ async function updateHomePage() {
   const { minLastUpdated, maxLastUpdated } = options;
   let allNewVideos = [];
   const lastCheckedAt = new Date();
+  const startTime = Date.now();
 
   console.log(`Looking for new videos... (${JSON.stringify({ minLastUpdated, maxLastUpdated })})`);
 
@@ -106,4 +108,8 @@ async function updateHomePage() {
   );
 
   if (process.env.NODE_ENV === 'production' && allNewVideos.length) await updateHomePage();
+
+  const heapUsed = process.memoryUsage().heapUsed / 1024 / 1024;
+  console.log(`Memory used: ~${Math.round(heapUsed * 100) / 100} MB`);
+  console.log(`Run time: ${prettyMilliseconds(Date.now() - startTime)}`);
 })();
