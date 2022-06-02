@@ -13,7 +13,10 @@ export default function VideoCard({ video }) {
   const { youtubeId, title, channel, thumbnail, publishedAt, duration, type } = video;
 
   return (
-    <div key={youtubeId} className='bg-slate-50 border-slate-700 flex flex-1 flex-col h-full gap-0'>
+    <div
+      key={youtubeId}
+      className='bg-slate-50 border-slate-700 text-xs md:text-sm flex flex-1 flex-col h-full gap-0'
+    >
       <a href={`https://youtube.com/watch?v=${youtubeId}`}>
         <div className='inline-block relative w-full'>
           <VideoThumbnail youtubeId={youtubeId} alt={title} className='w-full' />
@@ -26,7 +29,7 @@ export default function VideoCard({ video }) {
           </div>
         </div>
       </a>
-      <div className='p-2 text-sm flex-grow'>
+      <div className='p-2 md: flex-grow'>
         <span className='font-semibold'>{channel.channelName}</span>:{' '}
         <a href={`https://youtube.com/watch?v=${youtubeId}`}>{title}</a>
       </div>
