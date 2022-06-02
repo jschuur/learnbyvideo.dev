@@ -101,7 +101,6 @@ export async function saveVideos({ videos, channel = {}, skipShortDetection = fa
 }
 
 export const updateVideo = (video) => {
-  console.log({ where: { youtubeId: video.youtubeId }, data: video });
   return prisma.video.update({ where: { youtubeId: video.youtubeId }, data: video });
 };
 

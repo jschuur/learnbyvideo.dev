@@ -1,11 +1,29 @@
 import { DateTimeResolver, JSONObjectResolver } from 'graphql-scalars';
+import PGTsquery from 'pg-tsquery';
 import { VideoStatus, ChannelStatus } from '@prisma/client';
+
+const searchTermParser = new PGTsquery.Tsquery();
 
 import config from '../backend/config.mjs';
 
 export const resolvers = {
   DateTime: DateTimeResolver,
-  JSON: JSONObjectResolver,
+
+  SearchOrderByType: {
+    VIEWCOUNT: 'viewCount',
+    LIKECOUNT: 'likeCount',
+    COMMENTCOUNT: 'commentCount',
+    DURATIONSECONDS: 'durationSeconds',
+    CREATEDAT: 'createdAt',
+    UPDATEDAT: 'updatedAt',
+    PUBLISHEDAT: 'publishedAt',
+    LANGUAGE: 'language',
+    TITLE: 'title',
+  },
+  SearchOrderDirectionType: {
+    ASC: 'asc',
+    DESC: 'desc',
+  },
 
   Query: {
     allChannels: (_parent, _args, ctx) =>
@@ -57,5 +75,16 @@ export const resolvers = {
       }),
     videoCount: (_parent, _args, ctx) => ctx.prisma.video.count(),
     channelCount: (_parent, _args, ctx) => ctx.prisma.channel.count(),
+    searchVideos: (_parent, _args, ctx) =>
+      ctx.prisma.video.findMany({
+        where: {
+          title: { search: searchTermParser.parseAndStringify(_args.term) },
+          type: _args.videoType || undefined,
+        },
+        orderBy: { [_args.orderBy]: _args.orderDirection },
+        include: { channel: { include: { links: true } } },
+        take: Math.min(config.GRAPHQL_MAX_SEARCH_RESULTS_LIMIT, _args.limit),
+        skip: _args.offset,
+      }),
   },
 };

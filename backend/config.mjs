@@ -1,9 +1,17 @@
+// Allow the .env file to override any config constant
+const defaultValues = (defs) =>
+  defs.reduce((acc, [name, value]) => ({ ...acc, [name]: process.env[name] || value }), {});
+
 const config = {
-  RSS_FEED_UPDATE_DELAY_MS: 100,
-  SHORTS_CHECK_DELAY_MS: 1000,
-  GRAPHQL_MAX_RECENT_VIDEOS: 96,
-  MAX_YOUTUBE_BATCH_SIZE: 50,
-  MAX_CRAWLER_DAILY_QUOTA: 8000,
+  ...defaultValues([
+    ['RSS_FEED_UPDATE_DELAY_MS', 100],
+    ['SHORTS_CHECK_DELAY_MS', 1000],
+    ['GRAPHQL_MAX_RECENT_VIDEOS', 96],
+    ['GRAPHQL_DEFAULT_SEARCH_RESULTS_LIMIT', 96],
+    ['GRAPHQL_MAX_SEARCH_RESULTS_LIMIT', 500],
+    ['MAX_YOUTUBE_BATCH_SIZE', 50],
+    ['MAX_CRAWLER_DAILY_QUOTA', 8000],
+  ]),
 
   youTubeApiPartQuotas: {
     auditDetails: 4,

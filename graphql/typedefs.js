@@ -1,8 +1,9 @@
 import { gql } from 'apollo-server-micro';
 
+import config from '../backend/config.mjs';
+
 export const typeDefs = gql`
   scalar DateTime
-  scalar JSON
 
   type Channel {
     id: ID!
@@ -43,6 +44,28 @@ export const typeDefs = gql`
     type: String!
   }
 
+  enum VideoType {
+    VIDEO
+    SHORT
+  }
+
+  enum SearchOrderByType {
+    VIEWCOUNT
+    LIKECOUNT
+    COMMENTCOUNT
+    DURATIONSECONDS
+    CREATEDAT
+    UPDATEDAT
+    PUBLISHEDAT
+    LANGUAGE
+    TITLE
+  }
+
+  enum SearchOrderDirectionType {
+    ASC
+    DESC
+  }
+
   type Video {
     id: ID!
     youtubeId: String!
@@ -72,5 +95,12 @@ export const typeDefs = gql`
     video(id: ID): Video
     videoCount: Int!
     channelCount: Int!
+    searchVideos(
+      term: String,
+      offset: Int = 0,
+      limit: Int = ${config.GRAPHQL_DEFAULT_SEARCH_RESULTS_LIMIT},
+      orderBy: SearchOrderByType = VIEWCOUNT,
+      orderDirection: SearchOrderDirectionType = DESC,
+      videoType: VideoType): [Video]!
   }
 `;
