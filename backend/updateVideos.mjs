@@ -1,18 +1,20 @@
 import 'dotenv/config';
 
 import delay from 'delay';
-import { map, uniq } from 'lodash-es';
+import { map } from 'lodash-es';
 import minimost from 'minimost';
-import fetch from 'node-fetch';
+import pc from 'picocolors';
 import pluralize from 'pluralize';
-import prettyMilliseconds from 'pretty-ms';
 
-import { getActiveChannels, saveVideos, updateVideo, updateChannel } from './db.mjs';
+import { getActiveChannels, saveVideos, updateVideos, updateChannel } from './db.mjs';
+import { logTimeSpent, logMemoryUsage } from './util.mjs';
 import { getRecentVideosFromRSS, extractVideoInfo } from './youtube.mjs';
 import { youTubeVideosList } from './youtubeApi.mjs';
+import { QuotaTracker } from './youtubeQuota.mjs';
+import { updateHomePage } from './lib.mjs';
+import { error } from './util.mjs';
 
 import config from './config.mjs';
-import { VideoType } from '@prisma/client';
 
 const options = minimost(process.argv.slice(2), {
   string: ['min-last-updated', 'max-last-updated'],
@@ -23,30 +25,7 @@ const options = minimost(process.argv.slice(2), {
   },
 }).flags;
 
-async function updateHomePage() {
-  console.log('Updating production home page');
-
-  try {
-    const res = await fetch(
-      `http://learnbyvideo.dev/api/update?secret=${process.env.REVALIDATE_SECRET_TOKEN}`
-    );
-
-    if (res.ok) {
-      console.log(`Cached home page successfully`);
-    } else {
-      console.error(`Error updating cached home page`);
-    }
-  } catch ({ message }) {
-    console.error(`Error revalidating cached home page: ${message}`);
-  }
-}
-
-(async () => {
-  const { minLastUpdated, maxLastUpdated } = options;
-  let allNewVideos = [];
-  const lastCheckedAt = new Date();
-  const startTime = Date.now();
-
+async function getChannelsForUpdate({ minLastUpdated, maxLastUpdated, limit }) {
   console.log(`Looking for new videos... (${JSON.stringify({ minLastUpdated, maxLastUpdated })})`);
 
   const channels = await getActiveChannels({
@@ -67,10 +46,16 @@ async function updateHomePage() {
         },
       ],
     },
-    take: options.limit,
+    orderBy: { lastPublishedAt: 'desc' },
+    take: limit,
   });
 
   console.log(`Using ${pluralize('channel', channels.length, true)}`);
+
+  return channels;
+}
+async function findNewVideos({ channels, quotaTracker, lastCheckedAt }) {
+  let allNewVideos = [];
 
   for (const channel of channels) {
     const videos = await getRecentVideosFromRSS(channel);
@@ -81,35 +66,60 @@ async function updateHomePage() {
       allNewVideos.push(...newVideos);
     }
 
-    await updateChannel({ id: channel.id, lastCheckedAt });
+    if (videos !== undefined) await updateChannel({ id: channel.id, lastCheckedAt });
+
+    // If we run out of quota in the middle of a check, at least we potentially still got some new videos
+    if (await quotaTracker.checkUsage({ returnLimited: true })) break;
 
     await delay(config.RSS_FEED_UPDATE_DELAY_MS);
   }
 
-  // Get additional details for all the new videos via YouTube API
-  if (allNewVideos.length) {
-    console.log('Getting new video details...');
+  return allNewVideos;
+}
 
-    const videoData = await youTubeVideosList({
-      part: 'snippet,statistics,contentDetails',
-      ids: allNewVideos.map((v) => v.youtubeId),
-      task: 'newvideodetails',
+// Get additional details for all the new videos via YouTube API
+async function saveUpdatedVideoDetails({ videos, quotaTracker }) {
+  if (!videos?.length) return;
+
+  console.log(`Getting new video details for ${pluralize('new video', videos.length, true)}...`);
+
+  const videoData = await youTubeVideosList({
+    part: 'snippet,statistics,contentDetails',
+    ids: videos.map((v) => v.youtubeId),
+    quotaTracker,
+  });
+
+  await updateVideos(videoData.map((video) => extractVideoInfo(video)));
+}
+
+
+(async () => {
+  const startTime = Date.now();
+  const quotaTracker = new QuotaTracker('update_videos');
+
+  console.log('Starting update:videos');
+  await quotaTracker.checkUsage();
+
+  await quotaTracker.showSummary();
+  console.log();
+
+  try {
+    const channels = await getChannelsForUpdate(options);
+    const videos = await findNewVideos({
+      channels,
+      quotaTracker,
+      lastCheckedAt: new Date(startTime),
     });
+    await saveUpdatedVideoDetails({ videos, quotaTracker });
 
-    const videos = videoData.map((video) => extractVideoInfo(video));
-
-    for (const video of videos) await updateVideo(video);
+    if (process.env.NODE_ENV === 'production' && videos.length) await updateHomePage();
+  } catch ({ message }) {
+    error(`${pc.red('Error')}: Problem looking for video updates: ${message}`);
   }
 
-  console.log(
-    `\nFound ${pluralize('new video', allNewVideos.length, true)} across ${
-      channels.length
-    } ${pluralize('channel', channels.length, false)}.`
-  );
+  console.log();
+  await quotaTracker.showSummary();
 
-  if (process.env.NODE_ENV === 'production' && allNewVideos.length) await updateHomePage();
-
-  const heapUsed = process.memoryUsage().heapUsed / 1024 / 1024;
-  console.log(`Memory used: ~${Math.round(heapUsed * 100) / 100} MB`);
-  console.log(`Run time: ${prettyMilliseconds(Date.now() - startTime)}`);
+  logTimeSpent(startTime);
+  logMemoryUsage();
 })();

@@ -1,17 +1,12 @@
 import delay from 'delay';
 import pluralize from 'pluralize';
 import { merge } from 'lodash-es';
-import { VideoType, ChannelStatus, VideoStatus } from '@prisma/client';
+import { VideoType, CrawlState } from '@prisma/client';
 
 import prisma from '../prisma/prisma.mjs';
-import {
-  getChannelInfo,
-  getRecentVideosFromRSS,
-  extractChannelInfo,
-  videoStatus,
-  isShort,
-} from './youtube.mjs';
-import { youtubeQuotaDate } from './youtubeApi.mjs';
+import { extractChannelInfo, videoStatus, isShort, crawlChannel } from './youtube.mjs';
+import { youTubeChannelsList } from './youtubeApi.mjs';
+import { youtubeQuotaDate } from './youtube.mjs';
 import { error } from './util.mjs';
 
 import config from './config.mjs';
@@ -28,7 +23,7 @@ export const getChannel = (queryOptions) => prisma.channel.findUnique(queryOptio
 
 export const getVideos = (queryOptions) => prisma.video.findMany(queryOptions);
 
-export async function saveVideos({ videos, channel = {}, skipShortDetection = false }) {
+export async function saveVideos({ videos, channel = {} }) {
   let newVideos = [];
 
   if (!videos?.length) return;
@@ -70,7 +65,7 @@ export async function saveVideos({ videos, channel = {}, skipShortDetection = fa
         console.log(`  New video: ${video.title}`);
 
         // Look for YouTube Shorts
-        if (!skipShortDetection && (await isShort(video))) {
+        if (await isShort(video)) {
           console.log('  ...is Short');
 
           video.type = VideoType.SHORT;
@@ -94,15 +89,28 @@ export async function saveVideos({ videos, channel = {}, skipShortDetection = fa
     });
     await updateChannel({ id: latestVideo.channelId, lastPublishedAt: latestVideo.publishedAt });
 
-    console.log(`Found ${pluralize('video', newVideos.length, true)} for ${channel.channelName}`);
+    console.log(
+      `Found ${pluralize('new video', newVideos.length, true)} for ${channel.channelName}`
+    );
   }
 
   return newVideos;
 }
 
-export const updateVideo = (video) => {
-  return prisma.video.update({ where: { youtubeId: video.youtubeId }, data: video });
-};
+export const updateVideo = (video) =>
+  prisma.video.update({ where: { youtubeId: video.youtubeId }, data: video });
+
+export const updateVideos = (videos) =>
+  Promise.all(
+    videos.map((video) =>
+      prisma.video.update({
+        where: {
+          youtubeId: video.youtubeId,
+        },
+        data: video,
+      })
+    )
+  );
 
 export async function saveChannel(channel) {
   return await prisma.channel.upsert({
@@ -114,28 +122,41 @@ export async function saveChannel(channel) {
   });
 }
 
-export async function addChannelByYouTubeChannelId({ youtubeId, lastCheckedAt }) {
+export async function addChannel({ youtubeId, lastCheckedAt, quotaTracker, crawlVideos }) {
+  let channel;
+
   console.log(`Processing https://youtube.com/channel/${youtubeId}`);
 
   try {
-    const channelData = await getChannelInfo(youtubeId);
-    let channel = await saveChannel(channelData);
+    const channelData = await youTubeChannelsList({
+      ids: [youtubeId],
+      part: 'snippet,statistics',
+      quotaTracker,
+    });
 
-    console.log(`Adding latest videos for ${channel.channelName}`);
+    if (!channelData?.length) throw Error(`Invalid channel ID`);
 
-    const videos = await getRecentVideosFromRSS(channel);
-    if (videos?.length) await saveVideos({ videos, channel });
-    else console.log(`No videos found in RSS feed for ${channel.channelName}`);
+    channel = await saveChannel(extractChannelInfo(channelData[0]));
 
-    if (lastCheckedAt) {
-      channel.lastCheckedAt = lastCheckedAt;
+    console.log(`Adding videos for ${channel.channelName}`);
 
-      channel = await updateChannel({ id: channel.id, lastCheckedAt });
-    }
+    if (crawlVideos) {
+      const videos = await crawlChannel({ channel, quotaTracker });
 
-    return channel;
-  } catch ({ message }) {
-    console.error(`Error processing channel ID ${youtubeId}: ${message}`);
+      if (videos?.length) await saveVideos({ videos, channel });
+      else console.log(`No videos found for ${channel.channelName}`);
+
+      if (lastCheckedAt) channel = await updateChannel({ id: channel.id, lastCheckedAt });
+
+      await updateChannel({ id: channel.id, crawlState: CrawlState.COMPLETED });
+
+      return channel;
+    } else console.log(`Skipping video crawl for ${channel.channelName}`);
+  } catch (error) {
+    if (channel && crawlVideos)
+      await updateChannel({ id: channel.id, crawlState: CrawlState.ERROR });
+
+    throw error;
   }
 }
 
@@ -175,5 +196,5 @@ export async function todaysQuotaUsage(task) {
     where,
   });
 
-  return quotaUsage._sum.points;
+  return quotaUsage._sum.points || 0;
 }

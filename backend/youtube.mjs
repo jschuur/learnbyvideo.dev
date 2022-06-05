@@ -1,8 +1,12 @@
+import dateFnsTz from 'date-fns-tz';
+const { formatInTimeZone } = dateFnsTz;
+import { map } from 'lodash-es';
 import fetch from 'node-fetch';
 import Parser from 'rss-parser';
-import { youtube } from '@googleapis/youtube';
 
 import { ChannelStatus, VideoStatus } from '@prisma/client';
+
+import { youTubeVideosList, youTubePlaylistItems } from './youtubeApi.mjs';
 
 const rssParser = new Parser({
   customFields: {
@@ -12,11 +16,6 @@ const rssParser = new Parser({
       ['yt:channelId', 'channelId'],
     ],
   },
-});
-
-const Youtube = youtube({
-  version: 'v3',
-  auth: process.env.YOUTUBE_API_KEY,
 });
 
 // https://www.youtube.com/feeds/videos.xml?channel_id=THE_CHANNEL_ID_HERE
@@ -85,21 +84,6 @@ export function extractChannelInfo({ id, snippet, statistics }) {
   };
 }
 
-export async function getChannelInfo(youtubeId) {
-  const res = await Youtube.channels.list({
-    part: 'snippet,statistics',
-    id: youtubeId,
-  });
-
-  return { youtubeId, ...extractChannelInfo(res.data.items[0]) };
-}
-
-export const getVideoInfo = (youtubeId) =>
-  Youtube.videos.list({
-    part: 'snippet',
-    id: youtubeId,
-  });
-
 export async function isShort({ youtubeId, title, publishedAt }) {
   const shortsUrl = `https://www.youtube.com/shorts/${youtubeId}`;
 
@@ -150,4 +134,42 @@ export function youtubeDuration(str) {
     toSeconds,
     format,
   };
+}
+
+// YouTube API quota resets at midnight PDT
+export const youtubeQuotaDate = (date) =>
+  formatInTimeZone(date || new Date(), 'America/Los_Angeles', 'yyyy-MM-dd HH:mm:ss');
+
+// Use the YouTube API to get a channel's entire history of videos
+export async function crawlChannel({ channel, quotaTracker }) {
+  console.log(`Crawling video archive for ${channel.channelName}`);
+
+  // Get all the videos from a channel from its uploads playlist
+  const videoIds = map(
+    await youTubePlaylistItems({
+      playlistId: uploadPlaylistIdFromChannelId(channel.youtubeId),
+      part: 'contentDetails',
+      quotaTracker,
+    }),
+    (v) => v.contentDetails.videoId
+  );
+
+  // Then get all the video details for each video
+  if (videoIds?.length) {
+    console.log(`Found ${videoIds.length} videos for ${channel.channelName}`);
+
+    const videoData = await youTubeVideosList({
+      part: 'snippet,statistics,contentDetails',
+      ids: videoIds,
+      quotaTracker,
+    });
+
+    console.log(`Crawling completed for ${channel.channelName}`);
+
+    return videoData.map((video) => extractVideoInfo(video));
+  } else {
+    console.warn(`No videos found for ${channel.channelName}`);
+
+    return [];
+  }
 }

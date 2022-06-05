@@ -1,10 +1,6 @@
-import dateFnsTz from 'date-fns-tz';
-const { formatInTimeZone } = dateFnsTz;
 import { chunk, merge } from 'lodash-es';
-import fetch from 'node-fetch';
 import { youtube } from '@googleapis/youtube';
 
-import { addQuotaUsage } from './db.mjs';
 import { debug } from './util.mjs';
 
 import config from './config.mjs';
@@ -14,28 +10,8 @@ const Youtube = youtube({
   auth: process.env.YOUTUBE_API_KEY,
 });
 
-let quotaUsage = 0;
-
-export const currentQuotaUsage = () => quotaUsage;
-export const resetQuotaUsage = () => (quotaUsage = 0);
-
-export const youtubeQuotaDate = (date) =>
-  formatInTimeZone(date || new Date(), 'America/Los_Angeles', 'yyyy-MM-dd HH:mm:ss');
-
-async function logQuotaUsage({ endpoint, parts, task }) {
-  const quotaCost = parts
-    .split(',')
-    .reduce((acc, part) => acc + config.youTubeApiPartQuotas[part], 1);
-
-  debug(`YouTube API quota used for ${endpoint}: ${quotaCost}`);
-
-  await addQuotaUsage({ endpoint, parts, points: quotaCost, task });
-
-  quotaUsage += quotaCost;
-}
-
 // Batch YouTube API requests into the appropriate # of calls based on how many IDs it takes
-async function batchYouTubeRequest({ endpoint, ids, playlistIds, task, ...apiOptions }) {
+async function batchYouTubeRequest({ endpoint, ids, playlistIds, quotaTracker, ...apiOptions }) {
   let idField = 'id';
   let batchSize = config.MAX_YOUTUBE_BATCH_SIZE;
   const [model, action] = endpoint.split('.');
@@ -48,8 +24,6 @@ async function batchYouTubeRequest({ endpoint, ids, playlistIds, task, ...apiOpt
     ids = playlistIds;
   }
 
-  await logQuotaUsage({ endpoint, parts: apiOptions.part, task });
-
   // Loop through each batch of updates (wrap async map in Promise.all())
   return (
     await Promise.all(
@@ -57,10 +31,13 @@ async function batchYouTubeRequest({ endpoint, ids, playlistIds, task, ...apiOpt
         apiOptions[idField] = idChunk.join(',');
 
         debug(`batchYouTubeRequest to ${endpoint}`, apiOptions);
+
         try {
           response = await Youtube[model][action](apiOptions);
         } catch (err) {
           throw Error(`YouTube API error calling ${endpoint} (${err.message})`);
+        } finally {
+          await quotaTracker.logUsage({ endpoint, parts: apiOptions.part });
         }
 
         return response.data.items;
@@ -73,7 +50,7 @@ async function batchYouTubeRequest({ endpoint, ids, playlistIds, task, ...apiOpt
 async function paginatedYouTubeRequest({
   endpoint,
   maxPages = Number.MAX_SAFE_INTEGER,
-  task,
+  quotaTracker,
   ...apiOptions
 }) {
   const [model, action] = endpoint.split('.');
@@ -86,13 +63,16 @@ async function paginatedYouTubeRequest({
     if (pageToken) merge(apiOptions, { pageToken });
 
     debug(`paginatedYouTubeRequest to ${endpoint} ${JSON.stringify(apiOptions)}`);
+
     try {
       response = await Youtube[model][action](apiOptions);
     } catch ({ message }) {
-      throw Error(`YouTube API error calling ${endpoint} (${message})`);
+      throw Error(
+        `YouTube API error calling ${endpoint} during ${quotaTracker?.task} (${message})`
+      );
     }
 
-    logQuotaUsage({ endpoint, parts: apiOptions.part, task });
+    quotaTracker.logUsage({ endpoint, parts: apiOptions.part });
 
     items.push(...response.data.items);
     pageToken = response.data.nextPageToken;
