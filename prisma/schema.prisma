@@ -37,6 +37,7 @@ model Channel {
   authorName              String?
   type                    ChannelType     @default(value: INDIVIDUAL)
   status                  ChannelStatus   @default(value: ACTIVE)
+  reviewed                Boolean         @default(value: false)
   customUrl               String?         @unique
   description             String?
   country                 String?
@@ -120,6 +121,7 @@ model Video {
   channelId           Int
   type                VideoType    @default(value: VIDEO)
   status              VideoStatus  @default(value: PUBLISHED)
+  reviewed            Boolean      @default(value: false)
   category            Category?
   youtubeTags         String[]
   language            String?
