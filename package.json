@@ -14,6 +14,7 @@
     "update:channels": "node backend/updateChannels.mjs $1",
     "crawl:channels": "node backend/crawlChannels.mjs $1",
     "add:channels": "node backend/addChannel.mjs $1",
+    "quota": "node backend/quota.mjs",
     "db:migrate": "prisma migrate dev",
     "db:migrate:prod": "dotenv -e .env.production -- prisma migrate deploy",
     "db:dump:local": "pg_dump -d learnbyvideodev -Fc -f tmp/dbdump_local_`date +\"%Y-%m-%d_%H:%M:%S\"`.dump",
@@ -59,6 +60,7 @@
     "eslint-config-next": "12.1.6",
     "postcss": "^8.4.14",
     "prisma": "^3.14.0",
+    "sparkline": "^0.2.0",
     "tailwindcss": "^3.0.24"
   }
 }
