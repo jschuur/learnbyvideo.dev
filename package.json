@@ -15,6 +15,7 @@
     "crawl:channels": "node backend/crawlChannels.mjs $1",
     "add:channels": "node backend/addChannel.mjs $1",
     "quota": "node backend/quota.mjs",
+    "quota:verbose": "node backend/quota.mjs --verbose",
     "db:migrate": "prisma migrate dev",
     "db:migrate:prod": "dotenv -e .env.production -- prisma migrate deploy",
     "db:dump:local": "pg_dump -d learnbyvideodev -Fc -f tmp/dbdump_local_`date +\"%Y-%m-%d_%H:%M:%S\"`.dump",

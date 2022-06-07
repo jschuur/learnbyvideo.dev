@@ -2,6 +2,7 @@
 import 'dotenv/config';
 
 import { map } from 'lodash-es';
+import minimost from 'minimost';
 import pc from 'picocolors';
 import prisma from '../prisma/prisma.mjs';
 import sparkline from 'sparkline';
@@ -9,6 +10,13 @@ import sparkline from 'sparkline';
 import { QuotaTracker } from './youtubeQuota.mjs';
 
 import config from './config.mjs';
+
+const options = minimost(process.argv.slice(2), {
+  boolean: ['verbose'],
+  alias: {
+    v: 'verbose',
+  },
+}).flags;
 
 const sparklineQuery = `
   SELECT
@@ -27,12 +35,19 @@ const sparklineQuery = `
     days.date = usage.date
   ORDER BY date ASC`;
 
+const QUOTA_LIMIT = config.taskQuotas.all;
+
 const POINTS_PAD_WIDTH =
   Math.max(...Object.values(config.taskQuotas).map((points) => points.toString().length)) + 2;
 const TASK_PAD_WIDTH = Math.max(...Object.keys(config.taskQuotas).map((key) => key.length)) + 2;
 
-function padNum(num) {
-  return `${Intl.NumberFormat('en-US').format(num)}`.padStart(POINTS_PAD_WIDTH, ' ');
+const numColor = (num) =>
+  num <= 0 ? 'gray' : num >= QUOTA_LIMIT ? 'red' : num >= QUOTA_LIMIT * 0.8 ? 'yellow' : 'green';
+
+function padNum(num, { color } = {}) {
+  const formattedNum = `${Intl.NumberFormat('en-US').format(num)}`.padStart(POINTS_PAD_WIDTH, ' ');
+
+  return color ? pc[numColor(num)](formattedNum) : formattedNum;
 }
 
 async function taskQuotaSummary(task) {
@@ -40,27 +55,31 @@ async function taskQuotaSummary(task) {
   const usage = await quotaTracker.todaysUsage;
   const limit = config.taskQuotas[task];
 
-  const color =
-    usage <= 0 ? 'gray' : usage >= limit ? 'red' : usage >= limit * 0.8 ? 'yellow' : 'green';
-
   console.log(
-    `${task.padEnd(TASK_PAD_WIDTH, ' ')} ${pc[color](`${padNum(usage)} /${padNum(limit)}`)}`
+    `${task.padEnd(TASK_PAD_WIDTH, ' ')} ${padNum(usage, { color: true })} /${padNum(limit)}`
   );
+}
+
+const showSparkline = (chartData) =>
+  console.log(
+    ' ' + pc.yellow(sparkline(map(chartData, 'points'), { min: 0, max: QUOTA_LIMIT })) + '\n'
+  );
+
+function showDailyUsage(chartData) {
+  for (const { date, points } of chartData)
+    console.log(`${pc.dim(date)} ${padNum(points, { color: true })}`);
 }
 
 (async () => {
   const chartData = await prisma.$queryRawUnsafe(sparklineQuery);
 
-  console.log(
-    ' ' +
-      pc.yellow(sparkline(map(chartData, 'points'), { min: 0, max: config.taskQuotas.all })) +
-      '\n'
-  );
+  if (options.verbose) showDailyUsage(chartData);
+  showSparkline(chartData);
+
   for (const task of Object.keys(config.taskQuotas)) {
     if (task === 'all') continue;
 
     await taskQuotaSummary(task);
   }
   await taskQuotaSummary('all');
-
 })();
