@@ -52,6 +52,8 @@ function padNum(num, { color } = {}) {
 
 async function taskQuotaSummary(task) {
   const quotaTracker = new QuotaTracker(task);
+  if (!task) task = 'all';
+
   const usage = await quotaTracker.todaysUsage;
   const limit = config.taskQuotas[task];
 
@@ -81,5 +83,5 @@ function showDailyUsage(chartData) {
 
     await taskQuotaSummary(task);
   }
-  await taskQuotaSummary('all');
+  await taskQuotaSummary();
 })();
