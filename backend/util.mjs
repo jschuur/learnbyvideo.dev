@@ -3,7 +3,7 @@ import prettyMilliseconds from 'pretty-ms';
 
 export const warn = (str) => console.log(`${pc.yellow('Warning')}: ${str}`);
 
-export const error = (str) => console.error(`${pc.red('Warning')}: ${str}`);
+export const error = (str) => console.error(`${pc.red('Error')}: ${str}`);
 
 export const debug = (str) => process.env.DEBUG && console.log(str);
 

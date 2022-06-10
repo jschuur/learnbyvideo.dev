@@ -2,7 +2,7 @@ import pc from 'picocolors';
 import pluralize from 'pluralize';
 
 import { addQuotaUsage, todaysQuotaUsage } from './db.mjs';
-import { debug } from './util.mjs';
+import { debug, warn } from './util.mjs';
 
 import config from './config.mjs';
 
@@ -29,7 +29,7 @@ export class QuotaTracker {
     try {
       await addQuotaUsage({ endpoint, parts, points: quotaCost, task: this.task });
     } catch ({ message }) {
-      console.error(`${pc.yellow('Warning:')} Couldn't log quota usage: ${message}`);
+      warn(`Couldn't log quota usage: ${message}`);
     }
   }
 

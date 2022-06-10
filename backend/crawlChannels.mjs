@@ -11,7 +11,7 @@ const options = minimost(process.argv.slice(2), {
   },
 }).flags;
 
-import { getActiveChannels, getChannel, getChannels, saveVideos, updateChannel } from './db.mjs';
+import { getChannels, upsertVideos, updateChannel } from './db.mjs';
 import { error, logTimeSpent, logMemoryUsage } from './util.mjs';
 import { QuotaTracker } from './youtubeQuota.mjs';
 import { crawlChannel } from './youtube.mjs';
@@ -41,7 +41,7 @@ import config from './config.mjs';
   for (const channel of channels) {
     try {
       const videos = await crawlChannel({ channel, quotaTracker });
-      await saveVideos({ channel, videos });
+      if (videos?.length) await upsertVideos(videos);
 
       crawlState = CrawlState.COMPLETED;
     } catch ({ message }) {
@@ -50,7 +50,7 @@ import config from './config.mjs';
       error(message);
     }
 
-    await updateChannel({ id: channel.id, crawlState });
+    await updateChannel({ id: channel.id, lastCheckedAt: new Date(startTime), crawlState });
 
     await quotaTracker.checkUsage();
   }

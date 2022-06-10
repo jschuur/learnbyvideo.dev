@@ -25,6 +25,7 @@ import { updateHomePage } from './lib.mjs';
 
       if (!youtubeId) throw Error('No channel found');
 
+      // NOTE: This will not capture upcoming or live videos, as this is not part of the 'uploads' playlist used here.
       await addChannel({
         youtubeId,
         lastCheckedAt: new Date(startTime),

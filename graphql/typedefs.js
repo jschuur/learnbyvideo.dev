@@ -88,6 +88,9 @@ export const typeDefs = gql`
     createdAt: DateTime!
     updatedAt: DateTime!
     publishedAt: DateTime!
+    scheduledStartTime: DateTime
+    actualStartTime: DateTime
+    actualEndTime: DateTime
   }
 
   type Query {

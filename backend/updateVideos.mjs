@@ -1,52 +1,73 @@
 import 'dotenv/config';
 
 import delay from 'delay';
-import { map } from 'lodash-es';
 import minimost from 'minimost';
 import pc from 'picocolors';
 import pluralize from 'pluralize';
 
-import { getActiveChannels, saveVideos, updateVideos, updateChannel } from './db.mjs';
+import { VideoStatus } from '@prisma/client';
+
+import {
+  getMonitoredChannels,
+  upsertVideos,
+  updateVideos,
+  removeKnownVideos,
+  getVideos,
+  updateChannel,
+} from './db.mjs';
 import { logTimeSpent, logMemoryUsage } from './util.mjs';
-import { getRecentVideosFromRSS, extractVideoInfo } from './youtube.mjs';
+import { getRecentVideosFromRSS, extractVideoInfo, getVideoDetails } from './youtube.mjs';
 import { youTubeVideosList } from './youtubeApi.mjs';
 import { QuotaTracker } from './youtubeQuota.mjs';
 import { updateHomePage } from './lib.mjs';
-import { error } from './util.mjs';
+import { error, warn } from './util.mjs';
 
 import config from './config.mjs';
 
 const options = minimost(process.argv.slice(2), {
-  string: ['min-last-updated', 'max-last-updated'],
+  string: ['channels', 'min-last-updated', 'max-last-updated'],
+  boolean: ['find-new-videos', 'recheck-videos'],
+  default: {
+    'find-new-videos': true,
+    'recheck-videos': true,
+  },
   alias: {
+    c: 'channels',
     m: 'min-last-updated',
     x: 'max-last-updated',
     l: 'limit',
+    f: 'find-new-videos',
+    r: 'recheck-videos',
   },
 }).flags;
 
 async function getChannelsForUpdate({ minLastUpdated, maxLastUpdated, limit }) {
   console.log(`Looking for new videos... (${JSON.stringify({ minLastUpdated, maxLastUpdated })})`);
 
-  const channels = await getActiveChannels({
-    where: {
-      OR: [
-        {
-          lastPublishedAt: {
-            gte: minLastUpdated
-              ? new Date(Date.now() - 1000 * 60 * 60 * 24 * parseInt(options.minLastUpdated, 10))
-              : new Date(0),
-            lt: maxLastUpdated
-              ? new Date(Date.now() - 1000 * 60 * 60 * 24 * parseInt(options.maxLastUpdated, 10))
-              : new Date(),
-          },
+  const channels = await getMonitoredChannels({
+    where: options.channels
+      ? { youtubeId: { in: options.channels.split(',') } }
+      : {
+          OR: [
+            {
+              lastPublishedAt: {
+                gte: minLastUpdated
+                  ? new Date(
+                      Date.now() - 1000 * 60 * 60 * 24 * parseInt(options.minLastUpdated, 10)
+                    )
+                  : new Date(0),
+                lt: maxLastUpdated
+                  ? new Date(
+                      Date.now() - 1000 * 60 * 60 * 24 * parseInt(options.maxLastUpdated, 10)
+                    )
+                  : new Date(),
+              },
+            },
+            {
+              lastPublishedAt: null,
+            },
+          ],
         },
-        {
-          lastPublishedAt: null,
-        },
-      ],
-    },
-    orderBy: { lastPublishedAt: 'desc' },
     take: limit,
   });
 
@@ -54,44 +75,60 @@ async function getChannelsForUpdate({ minLastUpdated, maxLastUpdated, limit }) {
 
   return channels;
 }
-async function findNewVideos({ channels, quotaTracker, lastCheckedAt }) {
-  let allNewVideos = [];
 
+// Get the YouTube video IDs for new video from channels
+async function findNewVideos(channels) {
+  const allNewVideos = [];
+
+  // Use RSS just to grab recent video IDs and see if we have them in the DB
   for (const channel of channels) {
-    const videos = await getRecentVideosFromRSS(channel);
+    const recentVideos = await getRecentVideosFromRSS(channel);
+    const newVideos = await removeKnownVideos(recentVideos);
 
-    if (videos?.length) {
-      const newVideos = await saveVideos({ videos, channel });
+    if (newVideos?.length) {
+      console.log(`  Found ${pluralize('new video', newVideos.length, true)}`);
 
       allNewVideos.push(...newVideos);
     }
 
-    if (videos !== undefined) await updateChannel({ id: channel.id, lastCheckedAt });
+    // TODO use the API if a channel has 15 new videos
+    if (newVideos?.length === 15)
+      warn(`RSS feed for ${channel.channelName} has 15 new videos, check API for more`);
 
-    // If we run out of quota in the middle of a check, at least we potentially still got some new videos
-    if (await quotaTracker.checkUsage({ returnLimited: true })) break;
-
+    // Don't spam the feed URLs
     await delay(config.RSS_FEED_UPDATE_DELAY_MS);
   }
 
   return allNewVideos;
 }
 
-// Get additional details for all the new videos via YouTube API
-async function saveUpdatedVideoDetails({ videos, quotaTracker }) {
-  if (!videos?.length) return;
-
-  console.log(`Getting new video details for ${pluralize('new video', videos.length, true)}...`);
-
-  const videoData = await youTubeVideosList({
-    part: 'snippet,statistics,contentDetails',
-    ids: videos.map((v) => v.youtubeId),
-    quotaTracker,
+// Find upcoming Premiers and live videos to check for potential status changes
+async function findRecheckVideos() {
+  const videos = await getVideos({
+    where: {
+      OR: [
+        {
+          status: { in: [VideoStatus.UPCOMING, VideoStatus.LIVE] },
+        },
+        {
+          scheduledStartTime: { not: null },
+          actualStartTime: null,
+        },
+      ],
+    },
+    include: {
+      channel: true,
+    },
   });
 
-  await updateVideos(videoData.map((video) => extractVideoInfo(video)));
-}
+  if (videos?.length) {
+    console.log(
+      `Checking for status change of ${pluralize('upcoming/live video', videos.length, true)}`
+    );
+  }
 
+  return videos;
+}
 
 (async () => {
   const startTime = Date.now();
@@ -104,17 +141,34 @@ async function saveUpdatedVideoDetails({ videos, quotaTracker }) {
   console.log();
 
   try {
-    const channels = await getChannelsForUpdate(options);
-    const videos = await findNewVideos({
-      channels,
-      quotaTracker,
-      lastCheckedAt: new Date(startTime),
-    });
-    await saveUpdatedVideoDetails({ videos, quotaTracker });
+    const channels = options.findNewVideos ? await getChannelsForUpdate(options) : [];
+    const newVideos = options.findNewVideos ? await findNewVideos(channels) : [];
+    const recheckVideos = options.recheckVideos ? await findRecheckVideos() : [];
 
-    if (process.env.NODE_ENV === 'production' && videos.length) await updateHomePage();
+    // SPRINT: Also recheck videos from the last X hours/days to see if they have been deleted (do another deleted video check for older videos in a separate script)
+
+    const [newVideosResult, recheckVideosResult] = await getVideoDetails({
+      videos: [newVideos, recheckVideos],
+      part: 'snippet,statistics,contentDetails,liveStreamingDetails',
+      quotaTracker,
+    });
+
+    // Add what are probably all new videos
+    if (newVideosResult?.length) {
+      const addedVideos = await upsertVideos(newVideosResult);
+
+      console.log(`\nAdded ${pluralize('new video', addedVideos.length, true)} in total`);
+    }
+
+    // Update the state of videos that we rechecked (upcoming, live)
+    if (recheckVideosResult?.length) await updateVideos(recheckVideosResult);
+
+    for (const channel of channels)
+      await updateChannel({ ...channel, lastCheckedAt: new Date(startTime) });
+
+    if (process.env.NODE_ENV === 'production') await updateHomePage();
   } catch ({ message }) {
-    error(`${pc.red('Error')}: Problem looking for video updates: ${message}`);
+    error(`Problem looking for video updates: ${message}`);
   }
 
   console.log();
