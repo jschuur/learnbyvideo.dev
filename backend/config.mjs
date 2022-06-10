@@ -10,8 +10,15 @@ const config = {
     ['GRAPHQL_DEFAULT_SEARCH_RESULTS_LIMIT', 96],
     ['GRAPHQL_MAX_SEARCH_RESULTS_LIMIT', 500],
     ['MAX_YOUTUBE_BATCH_SIZE', 50],
-    ['MAX_CRAWLER_DAILY_QUOTA', 8000],
   ]),
+
+  taskQuotas: {
+    all: 10000,
+    crawl_channels: 2000,
+    update_videos: 1000,
+    update_channels: 500,
+    add_channel: 2000,
+  },
 
   youTubeApiPartQuotas: {
     auditDetails: 4,

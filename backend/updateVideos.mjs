@@ -1,115 +1,179 @@
 import 'dotenv/config';
 
 import delay from 'delay';
-import { map, uniq } from 'lodash-es';
 import minimost from 'minimost';
-import fetch from 'node-fetch';
+import pc from 'picocolors';
 import pluralize from 'pluralize';
-import prettyMilliseconds from 'pretty-ms';
 
-import { getActiveChannels, saveVideos, updateVideo, updateChannel } from './db.mjs';
-import { getRecentVideosFromRSS, extractVideoInfo } from './youtube.mjs';
+import { VideoStatus } from '@prisma/client';
+
+import {
+  getMonitoredChannels,
+  upsertVideos,
+  updateVideos,
+  removeKnownVideos,
+  getVideos,
+  updateChannel,
+} from './db.mjs';
+import { logTimeSpent, logMemoryUsage } from './util.mjs';
+import { getRecentVideosFromRSS, extractVideoInfo, getVideoDetails } from './youtube.mjs';
 import { youTubeVideosList } from './youtubeApi.mjs';
+import { QuotaTracker } from './youtubeQuota.mjs';
+import { updateHomePage } from './lib.mjs';
+import { error, warn } from './util.mjs';
 
 import config from './config.mjs';
-import { VideoType } from '@prisma/client';
 
 const options = minimost(process.argv.slice(2), {
-  string: ['min-last-updated', 'max-last-updated'],
+  string: ['channels', 'min-last-updated', 'max-last-updated'],
+  boolean: ['find-new-videos', 'recheck-videos'],
+  default: {
+    'find-new-videos': true,
+    'recheck-videos': true,
+  },
   alias: {
+    c: 'channels',
     m: 'min-last-updated',
     x: 'max-last-updated',
     l: 'limit',
+    f: 'find-new-videos',
+    r: 'recheck-videos',
   },
 }).flags;
 
-async function updateHomePage() {
-  console.log('Updating production home page');
-
-  try {
-    const res = await fetch(
-      `http://learnbyvideo.dev/api/update?secret=${process.env.REVALIDATE_SECRET_TOKEN}`
-    );
-
-    if (res.ok) {
-      console.log(`Cached home page successfully`);
-    } else {
-      console.error(`Error updating cached home page`);
-    }
-  } catch ({ message }) {
-    console.error(`Error revalidating cached home page: ${message}`);
-  }
-}
-
-(async () => {
-  const { minLastUpdated, maxLastUpdated } = options;
-  let allNewVideos = [];
-  const lastCheckedAt = new Date();
-  const startTime = Date.now();
-
+async function getChannelsForUpdate({ minLastUpdated, maxLastUpdated, limit }) {
   console.log(`Looking for new videos... (${JSON.stringify({ minLastUpdated, maxLastUpdated })})`);
 
-  const channels = await getActiveChannels({
-    where: {
-      OR: [
-        {
-          lastPublishedAt: {
-            gte: minLastUpdated
-              ? new Date(Date.now() - 1000 * 60 * 60 * 24 * parseInt(options.minLastUpdated, 10))
-              : new Date(0),
-            lt: maxLastUpdated
-              ? new Date(Date.now() - 1000 * 60 * 60 * 24 * parseInt(options.maxLastUpdated, 10))
-              : new Date(),
-          },
+  const channels = await getMonitoredChannels({
+    where: options.channels
+      ? { youtubeId: { in: options.channels.split(',') } }
+      : {
+          OR: [
+            {
+              lastPublishedAt: {
+                gte: minLastUpdated
+                  ? new Date(
+                      Date.now() - 1000 * 60 * 60 * 24 * parseInt(options.minLastUpdated, 10)
+                    )
+                  : new Date(0),
+                lt: maxLastUpdated
+                  ? new Date(
+                      Date.now() - 1000 * 60 * 60 * 24 * parseInt(options.maxLastUpdated, 10)
+                    )
+                  : new Date(),
+              },
+            },
+            {
+              lastPublishedAt: null,
+            },
+          ],
         },
-        {
-          lastPublishedAt: null,
-        },
-      ],
-    },
-    take: options.limit,
+    take: limit,
   });
 
   console.log(`Using ${pluralize('channel', channels.length, true)}`);
 
-  for (const channel of channels) {
-    const videos = await getRecentVideosFromRSS(channel);
+  return channels;
+}
 
-    if (videos?.length) {
-      const newVideos = await saveVideos({ videos, channel });
+// Get the YouTube video IDs for new video from channels
+async function findNewVideos(channels) {
+  const allNewVideos = [];
+
+  // Use RSS just to grab recent video IDs and see if we have them in the DB
+  for (const channel of channels) {
+    const recentVideos = await getRecentVideosFromRSS(channel);
+    const newVideos = await removeKnownVideos(recentVideos);
+
+    if (newVideos?.length) {
+      console.log(`  Found ${pluralize('new video', newVideos.length, true)}`);
 
       allNewVideos.push(...newVideos);
     }
 
-    await updateChannel({ id: channel.id, lastCheckedAt });
+    // TODO use the API if a channel has 15 new videos
+    if (newVideos?.length === 15)
+      warn(`RSS feed for ${channel.channelName} has 15 new videos, check API for more`);
 
+    // Don't spam the feed URLs
     await delay(config.RSS_FEED_UPDATE_DELAY_MS);
   }
 
-  // Get additional details for all the new videos via YouTube API
-  if (allNewVideos.length) {
-    console.log('Getting new video details...');
+  return allNewVideos;
+}
 
-    const videoData = await youTubeVideosList({
-      part: 'snippet,statistics,contentDetails',
-      ids: allNewVideos.map((v) => v.youtubeId),
-      task: 'newvideodetails',
-    });
+// Find upcoming Premiers and live videos to check for potential status changes
+async function findRecheckVideos() {
+  const videos = await getVideos({
+    where: {
+      OR: [
+        {
+          status: { in: [VideoStatus.UPCOMING, VideoStatus.LIVE] },
+        },
+        {
+          scheduledStartTime: { not: null },
+          actualStartTime: null,
+        },
+      ],
+    },
+    include: {
+      channel: true,
+    },
+  });
 
-    const videos = videoData.map((video) => extractVideoInfo(video));
-
-    for (const video of videos) await updateVideo(video);
+  if (videos?.length) {
+    console.log(
+      `Checking for status change of ${pluralize('upcoming/live video', videos.length, true)}`
+    );
   }
 
-  console.log(
-    `\nFound ${pluralize('new video', allNewVideos.length, true)} across ${
-      channels.length
-    } ${pluralize('channel', channels.length, false)}.`
-  );
+  return videos;
+}
 
-  if (process.env.NODE_ENV === 'production' && allNewVideos.length) await updateHomePage();
+(async () => {
+  const startTime = Date.now();
+  const quotaTracker = new QuotaTracker('update_videos');
 
-  const heapUsed = process.memoryUsage().heapUsed / 1024 / 1024;
-  console.log(`Memory used: ~${Math.round(heapUsed * 100) / 100} MB`);
-  console.log(`Run time: ${prettyMilliseconds(Date.now() - startTime)}`);
+  console.log('Starting update:videos');
+  await quotaTracker.checkUsage();
+
+  await quotaTracker.showSummary();
+  console.log();
+
+  try {
+    const channels = options.findNewVideos ? await getChannelsForUpdate(options) : [];
+    const newVideos = options.findNewVideos ? await findNewVideos(channels) : [];
+    const recheckVideos = options.recheckVideos ? await findRecheckVideos() : [];
+
+    // SPRINT: Also recheck videos from the last X hours/days to see if they have been deleted (do another deleted video check for older videos in a separate script)
+
+    const [newVideosResult, recheckVideosResult] = await getVideoDetails({
+      videos: [newVideos, recheckVideos],
+      part: 'snippet,statistics,contentDetails,liveStreamingDetails',
+      quotaTracker,
+    });
+
+    // Add what are probably all new videos
+    if (newVideosResult?.length) {
+      const addedVideos = await upsertVideos(newVideosResult);
+
+      console.log(`\nAdded ${pluralize('new video', addedVideos.length, true)} in total`);
+    }
+
+    // Update the state of videos that we rechecked (upcoming, live)
+    if (recheckVideosResult?.length) await updateVideos(recheckVideosResult);
+
+    for (const channel of channels)
+      await updateChannel({ ...channel, lastCheckedAt: new Date(startTime) });
+
+    if (process.env.NODE_ENV === 'production') await updateHomePage();
+  } catch ({ message }) {
+    error(`Problem looking for video updates: ${message}`);
+  }
+
+  console.log();
+  await quotaTracker.showSummary();
+
+  logTimeSpent(startTime);
+  logMemoryUsage();
 })();

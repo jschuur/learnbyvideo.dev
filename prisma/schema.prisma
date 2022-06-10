@@ -37,6 +37,7 @@ model Channel {
   authorName              String?
   type                    ChannelType     @default(value: INDIVIDUAL)
   status                  ChannelStatus   @default(value: ACTIVE)
+  reviewed                Boolean         @default(value: false)
   customUrl               String?         @unique
   description             String?
   country                 String?
@@ -67,7 +68,7 @@ enum ChannelStatus {
   PAUSED        // listed, but not checked for updates
   MODERATED     // listed and checked for updates, new videos first marked as moderated
   HIDDEN        // not listed
-  ARCHIVED      // not listed and nort checked for updates
+  ARCHIVED      // not listed and not checked for updates
 }
 
 enum ChannelType {
@@ -111,6 +112,7 @@ enum ChannelLinkType {
   Links         // Linktree etc.
   Link
   TikTok
+  Course
 }
 
 model Video {
@@ -120,6 +122,7 @@ model Video {
   channelId           Int
   type                VideoType    @default(value: VIDEO)
   status              VideoStatus  @default(value: PUBLISHED)
+  reviewed            Boolean      @default(value: false)
   category            Category?
   youtubeTags         String[]
   language            String?
@@ -130,6 +133,9 @@ model Video {
   viewCount           Int           @default(-1)
   likeCount           Int           @default(-1)
   commentCount        Int           @default(-1)
+  scheduledStartTime  DateTime?
+  actualStartTime     DateTime?
+  actualEndTime       DateTime?
   createdAt           DateTime      @default(now())
   updatedAt           DateTime      @updatedAt
   publishedAt         DateTime

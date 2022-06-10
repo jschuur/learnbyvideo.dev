@@ -11,6 +11,7 @@ export const typeDefs = gql`
     channelName: String!
     authorName: String
     status: String!
+    reviewed: Boolean!
     type: String!
     customUrl: String
     description: String
@@ -76,6 +77,7 @@ export const typeDefs = gql`
     language: String
     title: String!
     status: String!
+    reviewed: Boolean!
     type: String!
     description: String
     duration: String
@@ -86,6 +88,9 @@ export const typeDefs = gql`
     createdAt: DateTime!
     updatedAt: DateTime!
     publishedAt: DateTime!
+    scheduledStartTime: DateTime
+    actualStartTime: DateTime
+    actualEndTime: DateTime
   }
 
   type Query {

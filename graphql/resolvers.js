@@ -46,7 +46,7 @@ export const resolvers = {
       ctx.prisma.video.findMany({
         where: {
           status: {
-            in: [VideoStatus.LIVE, VideoStatus.PUBLISHED],
+            in: [VideoStatus.LIVE, VideoStatus.UPCOMING, VideoStatus.PUBLISHED],
           },
           channel: {
             NOT: {

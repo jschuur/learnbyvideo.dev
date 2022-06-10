@@ -1,16 +1,24 @@
 import 'dotenv/config';
+
 import { map } from 'lodash-es';
 import pluralize from 'pluralize';
-import prettyMilliseconds from 'pretty-ms';
-
-import delay from 'delay';
 
 import { getChannels, updateChannels } from './db.mjs';
+import { logTimeSpent, logMemoryUsage } from './util.mjs';
 import { youTubeChannelsList } from './youtubeApi.mjs';
+import { QuotaTracker } from './youtubeQuota.mjs';
 import { extractChannelInfo } from './youtube.mjs';
 
 (async () => {
   const startTime = Date.now();
+  const quotaTracker = new QuotaTracker('update_channels');
+
+  console.log('Starting update:channels');
+  await quotaTracker.checkUsage();
+
+  await quotaTracker.showSummary();
+  console.log();
+
   const channels = await getChannels();
 
   console.log(`Updating ${pluralize('channel', channels.length, true)}`);
@@ -18,11 +26,14 @@ import { extractChannelInfo } from './youtube.mjs';
   const channelData = await youTubeChannelsList({
     ids: map(channels, 'youtubeId'),
     part: 'snippet,statistics',
+    quotaTracker,
   });
 
-  const results = await updateChannels(channelData.map((channel) => extractChannelInfo(channel)));
+  await updateChannels(channelData.map((channel) => extractChannelInfo(channel)));
 
-  const heapUsed = process.memoryUsage().heapUsed / 1024 / 1024;
-  console.log(`Memory used: ~${Math.round(heapUsed * 100) / 100} MB`);
-  console.log(`Run time: ${prettyMilliseconds(Date.now() - startTime)}`);
+  console.log();
+  await quotaTracker.showSummary();
+
+  logTimeSpent(startTime);
+  logMemoryUsage();
 })();

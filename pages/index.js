@@ -31,8 +31,11 @@ export async function getStaticProps(context) {
       query Query {
         recentVideos(count: ${process.env.NEXT_PUBLIC_VIDEO_GRID_COUNT || 96}) {
           title
+          status
           youtubeId
           publishedAt
+          scheduledStartTime
+          actualStartTime
           createdAt
           duration
           type
