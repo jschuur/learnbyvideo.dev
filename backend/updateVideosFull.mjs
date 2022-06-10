@@ -10,20 +10,20 @@ import { QuotaTracker } from './youtubeQuota.mjs';
 import { logTimeSpent, logMemoryUsage } from './util.mjs';
 
 const options = minimost(process.argv.slice(2), {
-  string: ['limit', 'offset', 'min-last-published'],
-  boolean: ['order-by-updated-at', 'force'],
-  default: { limit: '50', offset: 0 },
+  string: ['limit', 'offset', 'min-last-published', 'order-by'],
+  boolean: ['force'],
+  default: { limit: '50', offset: 0, 'order-by': 'checked' },
   alias: {
     l: 'limit',
     m: 'min-last-published',
     o: 'offset',
-    u: 'order-by-updated-at',
+    b: 'order-by',
     f: 'force',
   },
 }).flags;
 
 (async () => {
-  const { minLastPublished, limit, offset, orderByUpdatedAt, force } = options;
+  const { minLastPublished, limit, offset, orderBy, force } = options;
   const startTime = Date.now();
   const quotaTracker = new QuotaTracker({ task: 'update_videos_full', force });
 
@@ -43,7 +43,7 @@ const options = minimost(process.argv.slice(2), {
     },
     take: minLastPublished ? undefined : parseInt(limit, 10),
     skip: minLastPublished ? undefined : parseInt(offset, 10),
-    orderBy: orderByUpdatedAt ? { updatedAt: 'asc' } : { publishedAt: 'desc' },
+    orderBy: orderBy === 'checked' ? { lastCheckedAt: 'asc' } : { publishedAt: 'desc' },
     include: { channel: true },
   });
 
