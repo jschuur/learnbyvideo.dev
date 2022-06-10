@@ -2,14 +2,15 @@ import pc from 'picocolors';
 import pluralize from 'pluralize';
 
 import { addQuotaUsage, todaysQuotaUsage } from './db.mjs';
-import { debug, warn } from './util.mjs';
+import { debug, warn, error } from './util.mjs';
 
 import config from './config.mjs';
 
 // Look Mom, I'm using classes in JavaScript!
 export class QuotaTracker {
-  constructor(task) {
+  constructor({ task, force = false }) {
     this.task = task;
+    this.force = force;
     this.usage = 0;
   }
 
@@ -51,15 +52,18 @@ export class QuotaTracker {
     const pointsLimit = config.taskQuotas[this.task] || -1;
 
     if (todaysTaskQuotaUsage > pointsLimit) {
-      console.log(
-        `${pc.yellow('Warning:')} Exceeded daily quota limit for ${
-          this.task
-        }: ${todaysTaskQuotaUsage} > ${pointsLimit} points. Exiting.`
-      );
+      if (!this.force) {
+        error(
+          `Exceeded daily quota limit for ${this.task}: ${todaysTaskQuotaUsage} > ${pointsLimit} points. Exiting.`
+        );
 
-      // Sometimes you need to still gracefully do stuff when you have exceeded quota allotment
-      if (returnLimited) return true;
-      else process.exit(1);
+        // Sometimes you need to still gracefully do stuff when you have exceeded quota allotment
+        if (returnLimited) return true;
+        else process.exit(1);
+      } else
+        warn(
+          `Force option used. Continuing despite exceeding daily quota limit for ${this.task}: ${todaysTaskQuotaUsage} > ${pointsLimit} points.`
+        );
     }
   }
 }

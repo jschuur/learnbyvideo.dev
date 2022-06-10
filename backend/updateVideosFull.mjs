@@ -11,20 +11,21 @@ import { logTimeSpent, logMemoryUsage } from './util.mjs';
 
 const options = minimost(process.argv.slice(2), {
   string: ['limit', 'offset', 'min-last-published'],
-  boolean: ['order-by-updated-at'],
+  boolean: ['order-by-updated-at', 'force'],
   default: { limit: '50', offset: 0 },
   alias: {
     l: 'limit',
     m: 'min-last-published',
     o: 'offset',
     u: 'order-by-updated-at',
+    f: 'force',
   },
 }).flags;
 
 (async () => {
-  const { minLastPublished, limit, offset, orderByUpdatedAt } = options;
+  const { minLastPublished, limit, offset, orderByUpdatedAt, force } = options;
   const startTime = Date.now();
-  const quotaTracker = new QuotaTracker('update_videos_full');
+  const quotaTracker = new QuotaTracker({ task: 'update_videos_full', force });
 
   console.log('Starting update:videos');
   await quotaTracker.checkUsage();

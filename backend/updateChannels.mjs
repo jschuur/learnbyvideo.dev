@@ -11,7 +11,7 @@ import { extractChannelInfo } from './youtube.mjs';
 
 (async () => {
   const startTime = Date.now();
-  const quotaTracker = new QuotaTracker('update_channels');
+  const quotaTracker = new QuotaTracker({ task: 'update_channels' });
 
   console.log('Starting update:channels');
   await quotaTracker.checkUsage();

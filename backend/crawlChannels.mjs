@@ -6,8 +6,10 @@ import { CrawlState } from '@prisma/client';
 
 const options = minimost(process.argv.slice(2), {
   string: ['max-channels'],
+  boolean: ['force'],
   alias: {
     c: 'max-channels',
+    c: 'force',
   },
 }).flags;
 
@@ -20,9 +22,10 @@ import config from './config.mjs';
 
 // Crawls new channels for videos (e.g. is a channel was added quickly from a bookmarklet)
 (async () => {
+  const { force } = options;
   let crawlState;
   const startTime = Date.now();
-  const quotaTracker = new QuotaTracker('crawl_channels');
+  const quotaTracker = new QuotaTracker({ task: 'crawl_channels', force });
 
   console.log('Starting crawl:channels');
   await quotaTracker.checkUsage();

@@ -9,7 +9,7 @@ import { updateHomePage } from './lib.mjs';
 
 (async () => {
   const startTime = Date.now();
-  const quotaTracker = new QuotaTracker('add_channel');
+  const quotaTracker = new QuotaTracker({ task: 'add_channel' });
 
   console.log('Starting add:channels');
   await quotaTracker.checkUsage();
