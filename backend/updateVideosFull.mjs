@@ -47,7 +47,7 @@ const options = minimost(process.argv.slice(2), {
     include: { channel: true },
   });
 
-  console.log(`Updating ${pluralize('video', videos.length, true)} videos...`);
+  console.log(`Updating ${pluralize('video', videos.length, true)}...`);
 
   const videoUpdates = await getVideoDetails({
     videos,

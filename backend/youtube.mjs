@@ -117,6 +117,7 @@ export function videoStatus({ channel, video, snippet }) {
       VideoStatus.DELETED,
       VideoStatus.HIDDEN,
       videoStatus.PUBLISHED,
+      videoStatus.UNLISTED,
     ].includes(video.status)
   )
     return video.status;
