@@ -16,6 +16,7 @@ const config = {
     all: 10000,
     crawl_channels: 2000,
     update_videos: 1000,
+    update_videos_full: 1000,
     update_channels: 500,
     add_channel: 2000,
   },

@@ -26,7 +26,7 @@ import config from './config.mjs';
 
 const options = minimost(process.argv.slice(2), {
   string: ['channels', 'min-last-updated', 'max-last-updated'],
-  boolean: ['find-new-videos', 'recheck-videos'],
+  boolean: ['find-new-videos', 'recheck-videos', 'force'],
   default: {
     'find-new-videos': true,
     'recheck-videos': true,
@@ -36,7 +36,8 @@ const options = minimost(process.argv.slice(2), {
     m: 'min-last-updated',
     x: 'max-last-updated',
     l: 'limit',
-    f: 'find-new-videos',
+    f: 'force',
+    n: 'find-new-videos',
     r: 'recheck-videos',
   },
 }).flags;
@@ -131,8 +132,9 @@ async function findRecheckVideos() {
 }
 
 (async () => {
+  const { force } = options;
   const startTime = Date.now();
-  const quotaTracker = new QuotaTracker('update_videos');
+  const quotaTracker = new QuotaTracker({ task: 'update_videos', force });
 
   console.log('Starting update:videos');
   await quotaTracker.checkUsage();

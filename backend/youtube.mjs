@@ -117,6 +117,7 @@ export function videoStatus({ channel, video, snippet }) {
       VideoStatus.DELETED,
       VideoStatus.HIDDEN,
       videoStatus.PUBLISHED,
+      videoStatus.UNLISTED,
     ].includes(video.status)
   )
     return video.status;
@@ -217,10 +218,12 @@ export async function getVideoDetails({ videos, quotaTracker, part = 'snippet,st
     'youtubeId'
   );
 
-  // Return as an array or array of arrays, depending on the way called
-  return videos.map((entry) =>
-    Array.isArray(entry)
-      ? entry.map((video) => videoLookup[video.youtubeId])
-      : videoLookup[entry.youtubeId]
-  );
+  // Return as an array or array of arrays, depending on the way called. Filter out any videos that weren't found because they went private/were deleted
+  return videos
+    .map((entry) =>
+      Array.isArray(entry)
+        ? entry.map((video) => videoLookup[video.youtubeId]).filter(Boolean)
+        : videoLookup[entry.youtubeId]
+    )
+    .filter(Boolean);
 }

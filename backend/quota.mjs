@@ -51,7 +51,7 @@ function padNum(num, { color } = {}) {
 }
 
 async function taskQuotaSummary(task) {
-  const quotaTracker = new QuotaTracker(task);
+  const quotaTracker = new QuotaTracker({ task: task });
   if (!task) task = 'all';
 
   const usage = await quotaTracker.todaysUsage;

@@ -139,6 +139,7 @@ model Video {
   createdAt           DateTime      @default(now())
   updatedAt           DateTime      @updatedAt
   publishedAt         DateTime
+  lastCheckedAt       DateTime?
 }
 
 enum VideoStatus {
@@ -148,6 +149,8 @@ enum VideoStatus {
   LIVE                // video is currently srtreaming live on YouTube
   HIDDEN              // video not listed (on learnbyvideo.dev)
   DELETED             // channel removed a previously published video
+  PRIVATE             // channel marked it as private (needs to be manually managed)
+  UNLISTED            // for future use
 }
 
 enum VideoType {
