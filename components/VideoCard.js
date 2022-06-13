@@ -52,7 +52,9 @@ export default function VideoCard({ video }) {
   return (
     <div
       key={youtubeId}
-      className='bg-slate-50 border-slate-700 text-xs md:text-sm flex flex-1 flex-col h-full gap-0'
+      className={`${
+        channel.type === 'BRAND' ? 'bg-blue-200' : 'bg-slate-50'
+      } border-slate-700 text-xs md:text-sm flex flex-1 flex-col h-full gap-0`}
     >
       <a href={`https://youtube.com/watch?v=${youtubeId}`}>
         <div className='inline-block relative w-full'>
@@ -70,7 +72,7 @@ export default function VideoCard({ video }) {
         <span className='font-semibold'>{channel.channelName}</span>:{' '}
         <a href={`https://youtube.com/watch?v=${youtubeId}`}>{title}</a>
       </div>
-      <div className='text-right text-xs font-thin text-slate-400 pb-2 pr-2'>{timeText}</div>
+      <div className='text-right text-xs font-thin text-slate-700 pb-2 pr-2'>{timeText}</div>
     </div>
   );
 }

@@ -40,6 +40,7 @@ export async function getStaticProps(context) {
           type
           channel {
             channelName
+            type
           }
         }
         videoCount
