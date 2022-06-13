@@ -9,7 +9,7 @@ import { VideoStatus } from '@prisma/client';
 import { getVideos, updateVideo, updateVideos } from './db.mjs';
 import { getVideoDetails, missingVideoStatus, videoUrl } from './youtube.mjs';
 import { QuotaTracker } from './youtubeQuota.mjs';
-import { logTimeSpent, logMemoryUsage, debug } from './util.mjs';
+import { logTimeSpent, logMemoryUsage, debug, error } from './util.mjs';
 
 import config from './config.mjs';
 
@@ -27,15 +27,6 @@ const options = minimost(process.argv.slice(2), {
     a: 'all-statuses',
   },
 }).flags;
-
-async function analyseMissingVideos(videos) {
-  for (const video of videos) {
-    const status = await missingVideoStatus(video.youtubeId);
-    console.log(`${status}: ${video.youtubeId}`);
-
-    await delay(config.MISSING_VIDEO_STATUS_CHECK_DELAY_MS);
-  }
-}
 
 function getVideosForUpdate({ minLastPublished, orderBy, allStatuses, ids, limit, offset }) {
   const queryOptions = {
@@ -80,6 +71,35 @@ function getVideosForUpdate({ minLastPublished, orderBy, allStatuses, ids, limit
   return getVideos(queryOptions);
 }
 
+// Scrap contents of video page to discern what happened to missing videos
+async function markDeletedVideos({ videos, videoUpdates }) {
+  // Get the difference between the videos we checked from the DB and what the API returned
+  const deletedVideos = differenceBy(videos, videoUpdates, 'youtubeId');
+
+  if (deletedVideos?.length === 0) return;
+
+  console.log(
+    `Identified ${pluralize('missing video', deletedVideos.length, true)}: ${deletedVideos
+      .map((video) => video.youtubeId)
+      .join(', ')}`
+  );
+
+  for (const video of deletedVideos) {
+    const { youtubeId } = video;
+
+    const deletedStatus = await missingVideoStatus(youtubeId);
+    const status = ['REMOVED', 'UNAVAILABLE', 'DELETED_ACCOUNT'].includes(deletedStatus)
+      ? VideoStatus.DELETED
+      : deletedStatus === 'PRIVATE'
+      ? VideoStatus.PRIVATE
+      : VideoStatus.UNKNOWN;
+
+    console.log(`${status}: ${videoUrl(youtubeId)}`);
+
+    await updateVideo({ youtubeId, status });
+  }
+}
+
 (async () => {
   const { force } = options;
   const startTime = Date.now();
@@ -102,29 +122,7 @@ function getVideosForUpdate({ minLastPublished, orderBy, allStatuses, ids, limit
     console.log(`Updating ${pluralize('video', videoUpdates.length, true)} in the database...`);
     await updateVideos(videoUpdates);
 
-    const deletedVideos = differenceBy(videos, videoUpdates, 'youtubeId');
-
-    console.log(
-      `Identified ${pluralize(
-        'video',
-        deletedVideos.length,
-        true
-      )} that appear to have been deleted: ${deletedVideos
-        .map((video) => video.youtubeId)
-        .join(', ')}`
-    );
-    for (const video of deletedVideos) {
-      const { youtubeId } = video;
-
-      const deletedStatus = await missingVideoStatus(youtubeId);
-
-      console.log(`${status}: ${videoUrl(videoId)}`);
-
-      if (['REMOVED', 'UNAVAILABLE', 'DELETED_ACCOUNT'].includes(deletedStatus)) {
-        updateVideo({ ...video, status: VideoStatus.DELETED });
-      } else if (deletedStatus === 'PRIVATE')
-        updateVideo({ ...video, status: VideoStatus.PRIVATE });
-    }
+    await markDeletedVideos({ videos, videoUpdates });
   } catch ({ message }) {
     error(message);
   }

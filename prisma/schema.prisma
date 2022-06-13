@@ -150,6 +150,7 @@ enum VideoStatus {
   DELETED // channel removed a previously published video
   PRIVATE // channel marked it as private (needs to be manually managed)
   UNLISTED // for future use
+  UNKNOWN // unidentifiable (e.g. couldn't parse 404 video status)
 }
 
 enum VideoType {
