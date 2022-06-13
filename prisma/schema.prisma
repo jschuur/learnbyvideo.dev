@@ -2,7 +2,7 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
   previewFeatures = ["fullTextSearch"]
 }
 
@@ -19,56 +19,56 @@ enum Category {
   TALK
   VLOG
   DOCUMENTARY
-  UPDATE            // Channel updates
-  ANNOUNCEMENT      // Product/release announcements
-  NEWS              // e.g. the Fireship news updates
+  UPDATE // Channel updates
+  ANNOUNCEMENT // Product/release announcements
+  NEWS // e.g. the Fireship news updates
   QANDA
   INTERVIEW
   REVIEW
   PORTFOLIOREVIEW
   OTHER
-  NONE              // Manually tagged as having no category after review
+  NONE // Manually tagged as having no category after review
 }
 
 model Channel {
-  id                      Int             @id @default(autoincrement())
-  youtubeId               String          @unique
-  channelName             String
-  authorName              String?
-  type                    ChannelType     @default(value: INDIVIDUAL)
-  status                  ChannelStatus   @default(value: ACTIVE)
-  reviewed                Boolean         @default(value: false)
-  customUrl               String?         @unique
-  description             String?
-  country                 String?
-  thumbnail               String?
-  thumbnailMedium         String?
-  thumbnailHigh           String?
-  defaultCategory         Category?
-  defaultLanguage         String          @default("en")
-  viewCount               Int             @default(-1)
-  subscriberCount         Int             @default(-1)
-  hiddenSubscriberCount   Boolean         @default(false)
-  videoCount              Int             @default(-1)
-  createdAt               DateTime        @default(now())
-  updatedAt               DateTime        @updatedAt
-  lastCheckedAt           DateTime?
-  lastPublishedAt         DateTime?
+  id                    Int           @id @default(autoincrement())
+  youtubeId             String        @unique
+  channelName           String
+  authorName            String?
+  type                  ChannelType   @default(value: INDIVIDUAL)
+  status                ChannelStatus @default(value: ACTIVE)
+  reviewed              Boolean       @default(value: false)
+  customUrl             String?       @unique
+  description           String?
+  country               String?
+  thumbnail             String?
+  thumbnailMedium       String?
+  thumbnailHigh         String?
+  defaultCategory       Category?
+  defaultLanguage       String        @default("en")
+  viewCount             Int           @default(-1)
+  subscriberCount       Int           @default(-1)
+  hiddenSubscriberCount Boolean       @default(false)
+  videoCount            Int           @default(-1)
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+  lastCheckedAt         DateTime?
+  lastPublishedAt       DateTime?
   // YouTube channel launch date
-  publishedAt             DateTime
-  crawlState              CrawlState      @default(PENDING)
-  videos                  Video[]
-  links                   ChannelLink[]
+  publishedAt           DateTime
+  crawlState            CrawlState    @default(PENDING)
+  videos                Video[]
+  links                 ChannelLink[]
 }
 
 // Active: checked for updates
 // Paused: listed, but not checked for updates
 enum ChannelStatus {
-  ACTIVE        // checked for updates
-  PAUSED        // listed, but not checked for updates
-  MODERATED     // listed and checked for updates, new videos first marked as moderated
-  HIDDEN        // not listed
-  ARCHIVED      // not listed and not checked for updates
+  ACTIVE // checked for updates
+  PAUSED // listed, but not checked for updates
+  MODERATED // listed and checked for updates, new videos first marked as moderated
+  HIDDEN // not listed
+  ARCHIVED // not listed and not checked for updates
 }
 
 enum ChannelType {
@@ -87,12 +87,12 @@ enum CrawlState {
 }
 
 model ChannelLink {
-  id                  Int          @id @default(autoincrement())
-  channel             Channel      @relation(fields: [channelId], references: [id])
-  channelId           Int
-  url                 String
-  title               String?
-  type                ChannelLinkType
+  id        Int             @id @default(autoincrement())
+  channel   Channel         @relation(fields: [channelId], references: [id])
+  channelId Int
+  url       String
+  title     String?
+  type      ChannelLinkType
 }
 
 enum ChannelLinkType {
@@ -109,48 +109,47 @@ enum ChannelLinkType {
   Patreon
   Shop
   Discord
-  Links         // Linktree etc.
+  Links // Linktree etc.
   Link
   TikTok
   Course
 }
 
 model Video {
-  id                  Int          @id @default(autoincrement())
-  youtubeId           String       @unique
-  channel             Channel      @relation(fields: [channelId], references: [id])
-  channelId           Int
-  type                VideoType    @default(value: VIDEO)
-  status              VideoStatus  @default(value: PUBLISHED)
-  reviewed            Boolean      @default(value: false)
-  category            Category?
-  youtubeTags         String[]
-  language            String?
-  title               String
-  description         String?
-  duration            String?
-  durationSeconds     Int           @default(-1)
-  viewCount           Int           @default(-1)
-  likeCount           Int           @default(-1)
-  commentCount        Int           @default(-1)
-  scheduledStartTime  DateTime?
-  actualStartTime     DateTime?
-  actualEndTime       DateTime?
-  createdAt           DateTime      @default(now())
-  updatedAt           DateTime      @updatedAt
-  publishedAt         DateTime
-  lastCheckedAt       DateTime?
+  id                 Int         @id @default(autoincrement())
+  youtubeId          String      @unique
+  channel            Channel     @relation(fields: [channelId], references: [id])
+  channelId          Int
+  type               VideoType   @default(value: VIDEO)
+  status             VideoStatus @default(value: PUBLISHED)
+  reviewed           Boolean     @default(value: false)
+  category           Category?
+  youtubeTags        String[]
+  language           String?
+  title              String
+  description        String?
+  duration           String?
+  durationSeconds    Int         @default(-1)
+  viewCount          Int         @default(-1)
+  likeCount          Int         @default(-1)
+  commentCount       Int         @default(-1)
+  scheduledStartTime DateTime?
+  actualStartTime    DateTime?
+  actualEndTime      DateTime?
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
+  publishedAt        DateTime
 }
 
 enum VideoStatus {
-  UPCOMING            // not yet published (YouTube Premiere)
-  PUBLISHED           // pubblished on YouTube
-  MODERATED           // video is awaiting moderation before being listed (becomes PUBLISHED or HIDDEN)
-  LIVE                // video is currently srtreaming live on YouTube
-  HIDDEN              // video not listed (on learnbyvideo.dev)
-  DELETED             // channel removed a previously published video
-  PRIVATE             // channel marked it as private (needs to be manually managed)
-  UNLISTED            // for future use
+  UPCOMING // not yet published (YouTube Premiere)
+  PUBLISHED // pubblished on YouTube
+  MODERATED // video is awaiting moderation before being listed (becomes PUBLISHED or HIDDEN)
+  LIVE // video is currently srtreaming live on YouTube
+  HIDDEN // video not listed (on learnbyvideo.dev)
+  DELETED // channel removed a previously published video
+  PRIVATE // channel marked it as private (needs to be manually managed)
+  UNLISTED // for future use
 }
 
 enum VideoType {
@@ -159,12 +158,12 @@ enum VideoType {
 }
 
 model QuotaUsage {
-  id          Int          @id @default(autoincrement())
-  date        String
-  endpoint    QuotaUsageEndpoints
-  parts       String?
-  points      Int
-  task        String?
+  id       Int                 @id @default(autoincrement())
+  date     String
+  endpoint QuotaUsageEndpoints
+  parts    String?
+  points   Int
+  task     String?
 }
 
 enum QuotaUsageEndpoints {

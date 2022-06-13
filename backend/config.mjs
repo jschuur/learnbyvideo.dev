@@ -6,7 +6,8 @@ const config = {
   ...defaultValues([
     ['RSS_FEED_UPDATE_DELAY_MS', 100],
     ['SHORTS_CHECK_DELAY_MS', 1000],
-    ['GRAPHQL_MAX_RECENT_VIDEOS', 96],
+    ['MISSING_VIDEO_STATUS_CHECK_DELAY_MS', 200],
+    [('GRAPHQL_MAX_RECENT_VIDEOS', 96)],
     ['GRAPHQL_DEFAULT_SEARCH_RESULTS_LIMIT', 96],
     ['GRAPHQL_MAX_SEARCH_RESULTS_LIMIT', 500],
     ['MAX_YOUTUBE_BATCH_SIZE', 50],
@@ -16,7 +17,7 @@ const config = {
     all: 10000,
     crawl_channels: 2000,
     update_videos: 1000,
-    update_videos_full: 1000,
+    update_videos_full: 3000,
     update_channels: 500,
     add_channel: 2000,
   },
@@ -38,6 +39,13 @@ const config = {
     status: 2,
     suggestions: 1,
     topicDetails: 2,
+  },
+
+  videoStatusHints: {
+    PRIVATE: 'This is a private video',
+    DELETED_ACCOUNT:
+      'This video is no longer available because the uploader has closed their YouTube account',
+    UNAVAILABLE: `This video isn't available any more`,
   },
 };
 

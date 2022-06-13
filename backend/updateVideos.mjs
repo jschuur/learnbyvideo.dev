@@ -165,8 +165,7 @@ async function findRecheckVideos() {
     // Update the state of videos that we rechecked (upcoming, live)
     if (recheckVideosResult?.length) await updateVideos(recheckVideosResult);
 
-    for (const channel of channels)
-      await updateChannel({ ...channel, lastCheckedAt: new Date(startTime) });
+    for (const channel of channels) await updateChannel(channel);
 
     if (process.env.NODE_ENV === 'production') await updateHomePage();
   } catch ({ message }) {

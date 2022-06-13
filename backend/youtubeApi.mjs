@@ -16,6 +16,7 @@ async function batchYouTubeRequest({ endpoint, ids, playlistIds, quotaTracker, .
   let batchSize = config.MAX_YOUTUBE_BATCH_SIZE;
   const [model, action] = endpoint.split('.');
   let response;
+  const results = [];
 
   // Only the playlists endpoint can't accept batches of IDs and uses a different field name
   if (playlistIds) {
@@ -24,26 +25,24 @@ async function batchYouTubeRequest({ endpoint, ids, playlistIds, quotaTracker, .
     ids = playlistIds;
   }
 
-  // Loop through each batch of updates (wrap async map in Promise.all())
-  return (
-    await Promise.all(
-      chunk(ids, batchSize).map(async (idChunk) => {
-        apiOptions[idField] = idChunk.join(',');
+  // Loop through each batch of updates
+  for (const idChunk of chunk(ids, batchSize)) {
+    apiOptions[idField] = idChunk.join(',');
 
-        debug(`batchYouTubeRequest to ${endpoint}`, apiOptions);
+    debug(`batchYouTubeRequest to ${endpoint} ${JSON.stringify(apiOptions, null, 2)}`);
 
-        try {
-          response = await Youtube[model][action](apiOptions);
-        } catch (err) {
-          throw Error(`YouTube API error calling ${endpoint} (${err.message})`);
-        } finally {
-          await quotaTracker.logUsage({ endpoint, parts: apiOptions.part });
-        }
+    try {
+      response = await Youtube[model][action](apiOptions);
+    } catch (err) {
+      throw Error(`YouTube API error calling ${endpoint} (${err.message})`);
+    } finally {
+      await quotaTracker.logUsage({ endpoint, parts: apiOptions.part });
+    }
 
-        return response.data.items;
-      })
-    )
-  ).flat();
+    results.push(...response.data.items);
+  }
+
+  return results;
 }
 
 // Make a multi-page YouTube API request

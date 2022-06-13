@@ -60,12 +60,10 @@ export async function upsertVideos(videos) {
             status: video.status || videoStatus({ channel, video }),
             language: video.language || channel.defaultLanguage || undefined,
             channelId: video.chanelId || channel.id,
-            lastCheckedAt: new Date(),
           },
           update: {
             ...video,
             channelId: video.channelId || channel.id,
-            lastCheckedAt: new Date(),
           },
         });
 
@@ -134,7 +132,7 @@ export async function removeKnownVideos(videos) {
 export const updateVideo = (video) =>
   prisma.video.update({
     where: { youtubeId: video.youtubeId },
-    data: { ...video, lastCheckedAt: new Date() },
+    data: video,
   });
 
 export function updateVideos(videos) {
@@ -146,7 +144,7 @@ export function updateVideos(videos) {
         where: {
           youtubeId: video.youtubeId,
         },
-        data: { ...omit(video, 'channel'), lastCheckedAt: new Date() },
+        data: omit(video, 'channel'),
       })
     )
   );

@@ -10,6 +10,8 @@ import { ChannelStatus, VideoStatus } from '@prisma/client';
 import { youTubeVideosList, youTubePlaylistItems } from './youtubeApi.mjs';
 import { warn, error } from './util.mjs';
 
+import config from './config.mjs';
+
 const rssParser = new Parser({
   customFields: {
     item: [
@@ -20,6 +22,11 @@ const rssParser = new Parser({
   },
 });
 
+export const videoUrl = (youtubeId) => `https://www.youtube.com/watch?v=${youtubeId}`;
+export const channelUrl = (youtubeId) => `https://www.youtube.com/channel/${youtubeId}`;
+export const feedUrl = (youtubeId) =>
+  `https://www.youtube.com/feeds/videos.xml?channel_id=${youtubeId}`;
+
 // Use the YouTube channel RSS feed to get recent videos
 export async function getRecentVideosFromRSS(channel) {
   const { youtubeId, channelName } = channel;
@@ -27,9 +34,7 @@ export async function getRecentVideosFromRSS(channel) {
   console.log(`Getting recent videos via RSS for channel ${channelName}...`);
 
   try {
-    const feed = await rssParser.parseURL(
-      `https://www.youtube.com/feeds/videos.xml?channel_id=${youtubeId}`
-    );
+    const feed = await rssParser.parseURL(feedUrl(youtubeId));
 
     return feed.items.map((item) => ({ ...item, channel }));
   } catch ({ message }) {
@@ -204,7 +209,9 @@ export async function getVideoDetails({ videos, quotaTracker, part = 'snippet,st
     {}
   );
 
-  console.log(`Getting video details for ${pluralize('video', uniqueVideos.length, true)}...`);
+  console.log(
+    `Getting video details for ${pluralize('video', uniqueVideos.length, true)} from YouTube API...`
+  );
 
   const videoData = await youTubeVideosList({
     part,
@@ -226,4 +233,14 @@ export async function getVideoDetails({ videos, quotaTracker, part = 'snippet,st
         : videoLookup[entry.youtubeId]
     )
     .filter(Boolean);
+}
+
+export async function missingVideoStatus(youtubeId) {
+  const page = await fetch(videoUrl(youtubeId));
+  const body = await page.text();
+
+  for (const [status, hint] of Object.entries(config.videoStatusHints))
+    if (body.includes(hint)) return status;
+
+  return 'UNKNOWN';
 }
