@@ -66,7 +66,7 @@ export const resolvers = {
             },
           },
         },
-        take: Math.min(_args.count, config.GRAPHQL_MAX_RECENT_VIDEOS),
+        take: Math.trunc(Math.min(_args.count, config.GRAPHQL_MAX_RECENT_VIDEOS)),
       }),
     video: (_parent, _args, ctx) =>
       ctx.prisma.video.findUnique({
@@ -83,7 +83,7 @@ export const resolvers = {
         },
         orderBy: { [_args.orderBy]: _args.orderDirection },
         include: { channel: { include: { links: true } } },
-        take: Math.min(config.GRAPHQL_MAX_SEARCH_RESULTS_LIMIT, _args.limit),
+        take: Math.trunc(Math.min(config.GRAPHQL_MAX_SEARCH_RESULTS_LIMIT, _args.limit)),
         skip: _args.offset,
       }),
   },

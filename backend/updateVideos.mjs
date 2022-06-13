@@ -105,6 +105,7 @@ async function findNewVideos(channels) {
 
 // Find upcoming Premiers and live videos to check for potential status changes
 async function findRecheckVideos() {
+  // TODO: Only recheck videos from the last 31 days
   const videos = await getVideos({
     where: {
       OR: [

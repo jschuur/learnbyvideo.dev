@@ -7,7 +7,7 @@ const config = {
     ['RSS_FEED_UPDATE_DELAY_MS', 100],
     ['SHORTS_CHECK_DELAY_MS', 1000],
     ['MISSING_VIDEO_STATUS_CHECK_DELAY_MS', 200],
-    [('GRAPHQL_MAX_RECENT_VIDEOS', 96)],
+    ['GRAPHQL_MAX_RECENT_VIDEOS', 240],
     ['GRAPHQL_DEFAULT_SEARCH_RESULTS_LIMIT', 96],
     ['GRAPHQL_MAX_SEARCH_RESULTS_LIMIT', 500],
     ['MAX_YOUTUBE_BATCH_SIZE', 50],
@@ -46,6 +46,7 @@ const config = {
     DELETED_ACCOUNT:
       'This video is no longer available because the uploader has closed their YouTube account',
     UNAVAILABLE: `This video isn't available any more`,
+    REMOVED: `This video has been removed by the uploader`,
   },
 };
 

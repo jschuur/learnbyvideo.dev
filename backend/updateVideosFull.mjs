@@ -6,7 +6,7 @@ import minimost from 'minimost';
 import pluralize from 'pluralize';
 import { VideoStatus } from '@prisma/client';
 
-import { getVideos, updateVideos } from './db.mjs';
+import { getVideos, updateVideo, updateVideos } from './db.mjs';
 import { getVideoDetails, missingVideoStatus, videoUrl } from './youtube.mjs';
 import { QuotaTracker } from './youtubeQuota.mjs';
 import { logTimeSpent, logMemoryUsage, debug } from './util.mjs';
@@ -113,6 +113,18 @@ function getVideosForUpdate({ minLastPublished, orderBy, allStatuses, ids, limit
         .map((video) => video.youtubeId)
         .join(', ')}`
     );
+    for (const video of deletedVideos) {
+      const { youtubeId } = video;
+
+      const deletedStatus = await missingVideoStatus(youtubeId);
+
+      console.log(`${status}: ${videoUrl(videoId)}`);
+
+      if (['REMOVED', 'UNAVAILABLE', 'DELETED_ACCOUNT'].includes(deletedStatus)) {
+        updateVideo({ ...video, status: VideoStatus.DELETED });
+      } else if (deletedStatus === 'PRIVATE')
+        updateVideo({ ...video, status: VideoStatus.PRIVATE });
+    }
   } catch ({ message }) {
     error(message);
   }
