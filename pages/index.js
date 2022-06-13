@@ -1,5 +1,4 @@
 import { gql } from '@apollo/client';
-import { sortBy } from 'lodash-es';
 import Head from 'next/head';
 
 import { contextResolver } from '../graphql/context.js';
