@@ -4,8 +4,9 @@ import englishStrings from 'react-timeago/lib/language-strings/en';
 import buildFormatter from 'react-timeago/lib/formatters/buildFormatter';
 
 import VideoThumbnail from './youtube/VideoThumbnail';
+import VideoCardOverlay from './VideoCardOverlay';
 
-import { youtubeDuration, shortDateTime } from '../lib/util';
+import { shortDateTime } from '../lib/util';
 
 const formatter = buildFormatter(englishStrings);
 
@@ -14,33 +15,18 @@ export default function VideoCard({ video }) {
     youtubeId,
     title,
     channel,
-    thumbnail,
+    duration,
     publishedAt,
     scheduledStartTime,
     actualStartTime,
-    duration,
     type,
     status,
   } = video;
-  let overlayBackground = 'red',
-    overlayText;
-
-  if (type === 'SHORT') {
-    overlayText = 'SHORT';
-  } else if (status === 'LIVE') {
-    overlayText = '\u25CF LIVE';
-  } else if (status === 'UPCOMING') {
-    overlayBackground = 'black';
-    overlayText = '\u23F0 PREMIERE';
-  } else {
-    overlayBackground = 'black';
-    overlayText = youtubeDuration(duration);
-  }
 
   // Format time string based on video type
   const timeText = actualStartTime ? (
     <>
-      {status === 'LIVE' ? 'started streaming' : 'streamed'}{' '}
+      {status === 'LIVE' ? (duration === 'P0D' ? 'started streaming' : 'premiered') : 'streamed'}{' '}
       <TimeAgo date={actualStartTime} formatter={formatter} />
     </>
   ) : scheduledStartTime ? (
@@ -59,13 +45,7 @@ export default function VideoCard({ video }) {
       <a href={`https://youtube.com/watch?v=${youtubeId}`}>
         <div className='inline-block relative w-full'>
           <VideoThumbnail youtubeId={youtubeId} alt={title} className='w-full' />
-          <div
-            className={`absolute ${
-              overlayBackground === 'red' ? 'bg-red-500' : 'bg-black/80'
-            } text-white font-roboto font-medium text-[12px] tracking-[0.5px] bottom-0 right-0 mx-[4px] my-[4px] px-[4px] py-[0px] rounded-sm`}
-          >
-            {overlayText}
-          </div>
+          <VideoCardOverlay duration={duration} type={type} status={status} />
         </div>
       </a>
       <div className='p-2 md: flex-grow'>
