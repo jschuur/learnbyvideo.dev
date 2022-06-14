@@ -1,11 +1,21 @@
 #!/usr/bin/env node
 import 'dotenv/config';
 
+import minimost from 'minimost';
+
 import { addChannel } from './db.mjs';
 import { error, logMemoryUsage, logTimeSpent } from './util.mjs';
 import { youTubeVideosList } from './youtubeApi.mjs';
 import { QuotaTracker } from './youtubeQuota.mjs';
 import { updateHomePage } from './lib.mjs';
+
+const { flags: options, input: youtubeIds } = minimost(process.argv.slice(2), {
+  string: ['status', 'default-category'],
+  alias: {
+    s: 'status',
+    c: 'default-category',
+  },
+});
 
 (async () => {
   const startTime = Date.now();
@@ -17,7 +27,7 @@ import { updateHomePage } from './lib.mjs';
   await quotaTracker.showSummary();
   console.log();
 
-  for (const id of process.argv.slice(2)) {
+  for (const id of youtubeIds) {
     try {
       const youtubeId = id.startsWith('UC')
         ? id
@@ -27,7 +37,11 @@ import { updateHomePage } from './lib.mjs';
 
       // NOTE: This will not capture upcoming or live videos, as this is not part of the 'uploads' playlist used here.
       await addChannel({
-        youtubeId,
+        data: {
+          youtubeId,
+          status: options.status || undefined,
+          defaultCategory: options.defaultCategory || undefined,
+        },
         lastCheckedAt: new Date(startTime),
         quotaTracker,
         crawlVideos: true,
