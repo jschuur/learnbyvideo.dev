@@ -1,14 +1,14 @@
 import dateFnsTz from 'date-fns-tz';
-const { formatInTimeZone } = dateFnsTz;
-import { map, keyBy, uniqBy } from 'lodash-es';
+import { keyBy, map, uniqBy } from 'lodash-es';
 import fetch from 'node-fetch';
 import pluralize from 'pluralize';
 import Parser from 'rss-parser';
+const { formatInTimeZone } = dateFnsTz;
 
 import { ChannelStatus, VideoStatus } from '@prisma/client';
 
-import { youTubeVideosList, youTubePlaylistItems } from './youtubeApi.mjs';
-import { warn, error } from './util.mjs';
+import { error, warn } from './util.mjs';
+import { youTubePlaylistItems, youTubeVideosList } from './youtubeApi.mjs';
 
 import config from './config.mjs';
 

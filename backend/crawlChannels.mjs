@@ -1,8 +1,8 @@
 import 'dotenv/config';
 
+import { CrawlState } from '@prisma/client';
 import minimost from 'minimost';
 import pluralize from 'pluralize';
-import { CrawlState } from '@prisma/client';
 
 const options = minimost(process.argv.slice(2), {
   string: ['max-channels'],
@@ -13,12 +13,10 @@ const options = minimost(process.argv.slice(2), {
   },
 }).flags;
 
-import { getChannels, upsertVideos, updateChannel } from './db.mjs';
-import { error, logTimeSpent, logMemoryUsage } from './util.mjs';
-import { QuotaTracker } from './youtubeQuota.mjs';
+import { getChannels, updateChannel, upsertVideos } from './db.mjs';
+import { error, logMemoryUsage, logTimeSpent } from './util.mjs';
 import { crawlChannel } from './youtube.mjs';
-
-import config from './config.mjs';
+import { QuotaTracker } from './youtubeQuota.mjs';
 
 // Crawls new channels for videos (e.g. is a channel was added quickly from a bookmarklet)
 (async () => {

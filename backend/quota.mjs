@@ -4,8 +4,8 @@ import 'dotenv/config';
 import { map } from 'lodash-es';
 import minimost from 'minimost';
 import pc from 'picocolors';
-import prisma from '../prisma/prisma.mjs';
 import sparkline from 'sparkline';
+import prisma from '../prisma/prisma.mjs';
 
 import { QuotaTracker } from './youtubeQuota.mjs';
 

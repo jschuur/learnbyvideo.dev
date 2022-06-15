@@ -1,17 +1,14 @@
 import 'dotenv/config';
 
-import delay from 'delay';
+import { VideoStatus } from '@prisma/client';
 import { differenceBy } from 'lodash-es';
 import minimost from 'minimost';
 import pluralize from 'pluralize';
-import { VideoStatus } from '@prisma/client';
 
 import { getVideos, updateVideo, updateVideos } from './db.mjs';
+import { debug, error, logMemoryUsage, logTimeSpent } from './util.mjs';
 import { getVideoDetails, missingVideoStatus, videoUrl } from './youtube.mjs';
 import { QuotaTracker } from './youtubeQuota.mjs';
-import { logTimeSpent, logMemoryUsage, debug, error } from './util.mjs';
-
-import config from './config.mjs';
 
 const options = minimost(process.argv.slice(2), {
   string: ['limit', 'offset', 'ids', 'min-last-published', 'order-by'],

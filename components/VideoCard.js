@@ -1,10 +1,9 @@
-import Image from 'next/image';
 import TimeAgo from 'react-timeago';
-import englishStrings from 'react-timeago/lib/language-strings/en';
 import buildFormatter from 'react-timeago/lib/formatters/buildFormatter';
+import englishStrings from 'react-timeago/lib/language-strings/en';
 
-import VideoThumbnail from './youtube/VideoThumbnail';
 import VideoCardOverlay from './VideoCardOverlay';
+import VideoThumbnail from './youtube/VideoThumbnail';
 
 import { shortDateTime } from '../lib/util';
 

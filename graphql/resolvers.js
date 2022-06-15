@@ -1,6 +1,6 @@
-import { DateTimeResolver, JSONObjectResolver } from 'graphql-scalars';
+import { ChannelStatus, VideoStatus } from '@prisma/client';
+import { DateTimeResolver } from 'graphql-scalars';
 import PGTsquery from 'pg-tsquery';
-import { VideoStatus, ChannelStatus } from '@prisma/client';
 
 const searchTermParser = new PGTsquery.Tsquery();
 

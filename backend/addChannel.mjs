@@ -2,10 +2,10 @@
 import 'dotenv/config';
 
 import { addChannel } from './db.mjs';
+import { updateHomePage } from './lib.mjs';
 import { error, logMemoryUsage, logTimeSpent } from './util.mjs';
 import { youTubeVideosList } from './youtubeApi.mjs';
 import { QuotaTracker } from './youtubeQuota.mjs';
-import { updateHomePage } from './lib.mjs';
 
 (async () => {
   const startTime = Date.now();

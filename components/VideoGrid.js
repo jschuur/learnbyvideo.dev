@@ -1,5 +1,4 @@
 import { partition } from 'lodash-es';
-import { useMemo } from 'react';
 
 import VideoCard from './VideoCard';
 

@@ -1,5 +1,5 @@
-import { chunk, merge } from 'lodash-es';
 import { youtube } from '@googleapis/youtube';
+import { chunk, merge } from 'lodash-es';
 
 import { debug } from './util.mjs';
 

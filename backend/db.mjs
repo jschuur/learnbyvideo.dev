@@ -1,13 +1,17 @@
+import { CrawlState, VideoStatus, VideoType } from '@prisma/client';
 import delay from 'delay';
-import pluralize from 'pluralize';
-import { merge, differenceBy, map, groupBy, omit } from 'lodash-es';
-import { VideoType, VideoStatus, CrawlState } from '@prisma/client';
+import { differenceBy, groupBy, map, merge, omit } from 'lodash-es';
 
 import prisma from '../prisma/prisma.mjs';
-import { extractChannelInfo, videoStatus, isShort, crawlChannel } from './youtube.mjs';
-import { youTubeChannelsList } from './youtubeApi.mjs';
-import { youtubeQuotaDate } from './youtube.mjs';
 import { error } from './util.mjs';
+import {
+  crawlChannel,
+  extractChannelInfo,
+  isShort,
+  videoStatus,
+  youtubeQuotaDate,
+} from './youtube.mjs';
+import { youTubeChannelsList } from './youtubeApi.mjs';
 
 import config from './config.mjs';
 

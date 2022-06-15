@@ -2,25 +2,22 @@ import 'dotenv/config';
 
 import delay from 'delay';
 import minimost from 'minimost';
-import pc from 'picocolors';
 import pluralize from 'pluralize';
 
 import { VideoStatus } from '@prisma/client';
 
 import {
   getMonitoredChannels,
-  upsertVideos,
-  updateVideos,
-  removeKnownVideos,
   getVideos,
+  removeKnownVideos,
   updateChannel,
+  updateVideos,
+  upsertVideos,
 } from './db.mjs';
-import { logTimeSpent, logMemoryUsage } from './util.mjs';
-import { getRecentVideosFromRSS, extractVideoInfo, getVideoDetails } from './youtube.mjs';
-import { youTubeVideosList } from './youtubeApi.mjs';
-import { QuotaTracker } from './youtubeQuota.mjs';
 import { updateHomePage } from './lib.mjs';
-import { error, warn } from './util.mjs';
+import { error, logMemoryUsage, logTimeSpent, warn } from './util.mjs';
+import { getRecentVideosFromRSS, getVideoDetails } from './youtube.mjs';
+import { QuotaTracker } from './youtubeQuota.mjs';
 
 import config from './config.mjs';
 

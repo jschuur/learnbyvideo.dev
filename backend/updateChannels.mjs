@@ -4,10 +4,10 @@ import { map } from 'lodash-es';
 import pluralize from 'pluralize';
 
 import { getChannels, updateChannels } from './db.mjs';
-import { logTimeSpent, logMemoryUsage } from './util.mjs';
+import { logMemoryUsage, logTimeSpent } from './util.mjs';
+import { extractChannelInfo } from './youtube.mjs';
 import { youTubeChannelsList } from './youtubeApi.mjs';
 import { QuotaTracker } from './youtubeQuota.mjs';
-import { extractChannelInfo } from './youtube.mjs';
 
 (async () => {
   const startTime = Date.now();

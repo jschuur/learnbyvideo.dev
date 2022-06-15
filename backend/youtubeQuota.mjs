@@ -2,7 +2,7 @@ import pc from 'picocolors';
 import pluralize from 'pluralize';
 
 import { addQuotaUsage, todaysQuotaUsage } from './db.mjs';
-import { debug, warn, error } from './util.mjs';
+import { debug, error, warn } from './util.mjs';
 
 import config from './config.mjs';
 
