@@ -1,16 +1,16 @@
 import { gql } from '@apollo/client';
 import Head from 'next/head';
 
-import { contextResolver } from '../graphql/context.js';
-import { createStaticApolloClient } from '../lib/apollo-client-static.js';
+import { contextResolver } from '../graphql/context';
+import { createStaticApolloClient } from '../lib/apollo-client-static';
 
-import Footer from '../components/layout/Footer.js';
-import Header from '../components/layout/Header.js';
-import VideoGrid from '../components/VideoGrid.js';
+import Footer from '../components/layout/Footer';
+import Header from '../components/layout/Header';
+import VideoGrid from '../components/VideoGrid';
 
 export default function HomePage({ videos, videoCount, channelCount, lastUpdated }) {
   return (
-    <div className='container mx-auto px-10'>
+    <div className="container mx-auto px-10">
       <Head>
         <title>LearnByVideo.dev - Find the best web development tutorial videos</title>
       </Head>

@@ -11,8 +11,10 @@ const Youtube = youtube({
 });
 
 // Batch YouTube API requests into the appropriate # of calls based on how many IDs it takes
-async function batchYouTubeRequest({ endpoint, ids, playlistIds, quotaTracker, ...apiOptions }) {
+async function batchYouTubeRequest(options) {
+  const { endpoint, ids, playlistIds, quotaTracker, ...apiOptions } = options;
   let idField = 'id';
+  let videoIds = ids;
   let batchSize = config.MAX_YOUTUBE_BATCH_SIZE;
   const [model, action] = endpoint.split('.');
   let response;
@@ -22,11 +24,11 @@ async function batchYouTubeRequest({ endpoint, ids, playlistIds, quotaTracker, .
   if (playlistIds) {
     batchSize = 1;
     idField = 'playlistId';
-    ids = playlistIds;
+    videoIds = playlistIds;
   }
 
   // Loop through each batch of updates
-  for (const idChunk of chunk(ids, batchSize)) {
+  for (const idChunk of chunk(videoIds, batchSize)) {
     apiOptions[idField] = idChunk.join(',');
 
     debug(`batchYouTubeRequest to ${endpoint} ${JSON.stringify(apiOptions, null, 2)}`);
@@ -46,17 +48,12 @@ async function batchYouTubeRequest({ endpoint, ids, playlistIds, quotaTracker, .
 }
 
 // Make a multi-page YouTube API request
-async function paginatedYouTubeRequest({
-  endpoint,
-  maxPages = Number.MAX_SAFE_INTEGER,
-  quotaTracker,
-  ...apiOptions
-}) {
+async function paginatedYouTubeRequest({ endpoint, maxPages = Number.MAX_SAFE_INTEGER, quotaTracker, ...apiOptions }) {
   const [model, action] = endpoint.split('.');
-  let items = [];
+  const items = [];
   let response;
-  let pageToken,
-    pageCount = 0;
+  let pageToken;
+  let pageCount = 0;
 
   do {
     if (pageToken) merge(apiOptions, { pageToken });
@@ -64,18 +61,17 @@ async function paginatedYouTubeRequest({
     debug(`paginatedYouTubeRequest to ${endpoint} ${JSON.stringify(apiOptions)}`);
 
     try {
+      // @googleapis/youtube can miss API results if you make parallel calls
       response = await Youtube[model][action](apiOptions);
     } catch ({ message }) {
-      throw Error(
-        `YouTube API error calling ${endpoint} during ${quotaTracker?.task} (${message})`
-      );
+      throw Error(`YouTube API error calling ${endpoint} during ${quotaTracker?.task} (${message})`);
     }
 
     quotaTracker.logUsage({ endpoint, parts: apiOptions.part });
 
     items.push(...response.data.items);
     pageToken = response.data.nextPageToken;
-    pageCount++;
+    pageCount += 1;
   } while (pageToken && pageCount < maxPages);
 
   return items;

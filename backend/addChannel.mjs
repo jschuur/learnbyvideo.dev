@@ -5,7 +5,7 @@ import { addChannel } from './db.mjs';
 import { updateHomePage } from './lib.mjs';
 import { error, logMemoryUsage, logTimeSpent } from './util.mjs';
 import { youTubeVideosList } from './youtubeApi.mjs';
-import { QuotaTracker } from './youtubeQuota.mjs';
+import QuotaTracker from './youtubeQuota.mjs';
 
 (async () => {
   const startTime = Date.now();
@@ -25,7 +25,6 @@ import { QuotaTracker } from './youtubeQuota.mjs';
 
       if (!youtubeId) throw Error('No channel found');
 
-      // NOTE: This will not capture upcoming or live videos, as this is not part of the 'uploads' playlist used here.
       await addChannel({
         youtubeId,
         lastCheckedAt: new Date(startTime),

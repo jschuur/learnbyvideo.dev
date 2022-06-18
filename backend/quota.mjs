@@ -5,9 +5,9 @@ import { map } from 'lodash-es';
 import minimost from 'minimost';
 import pc from 'picocolors';
 import sparkline from 'sparkline';
-import prisma from '../prisma/prisma.mjs';
 
-import { QuotaTracker } from './youtubeQuota.mjs';
+import prisma from '../prisma/prisma.mjs';
+import QuotaTracker from './youtubeQuota.mjs';
 
 import config from './config.mjs';
 
@@ -20,7 +20,7 @@ const options = minimost(process.argv.slice(2), {
 
 const sparklineQuery = `
   SELECT
-  	date_trunc('day', days)::date AS date,
+    date_trunc('day', days)::date AS date,
     usage.points
   FROM generate_series((CURRENT_DATE - INTERVAL '31' day), CURRENT_DATE, '1 day'::INTERVAL) days
   LEFT JOIN (
@@ -37,8 +37,7 @@ const sparklineQuery = `
 
 const QUOTA_LIMIT = config.taskQuotas.all;
 
-const POINTS_PAD_WIDTH =
-  Math.max(...Object.values(config.taskQuotas).map((points) => points.toString().length)) + 2;
+const POINTS_PAD_WIDTH = Math.max(...Object.values(config.taskQuotas).map((points) => points.toString().length)) + 2;
 const TASK_PAD_WIDTH = Math.max(...Object.keys(config.taskQuotas).map((key) => key.length)) + 2;
 
 const numColor = (num) =>
@@ -50,26 +49,21 @@ function padNum(num, { color } = {}) {
   return color ? pc[numColor(num)](formattedNum) : formattedNum;
 }
 
-async function taskQuotaSummary(task) {
-  const quotaTracker = new QuotaTracker({ task: task });
-  if (!task) task = 'all';
+async function taskQuotaSummary(taskName) {
+  const quotaTracker = new QuotaTracker({ task: taskName });
+  const task = taskName || 'all';
 
   const usage = await quotaTracker.todaysUsage;
   const limit = config.taskQuotas[task];
 
-  console.log(
-    `${task.padEnd(TASK_PAD_WIDTH, ' ')} ${padNum(usage, { color: true })} /${padNum(limit)}`
-  );
+  console.log(`${task.padEnd(TASK_PAD_WIDTH, ' ')} ${padNum(usage, { color: true })} /${padNum(limit)}`);
 }
 
 const showSparkline = (chartData) =>
-  console.log(
-    ' ' + pc.yellow(sparkline(map(chartData, 'points'), { min: 0, max: QUOTA_LIMIT })) + '\n'
-  );
+  console.log(` ${pc.yellow(sparkline(map(chartData, 'points'), { min: 0, max: QUOTA_LIMIT }))}\n`);
 
 function showDailyUsage(chartData) {
-  for (const { date, points } of chartData)
-    console.log(`${pc.dim(date)} ${padNum(points, { color: true })}`);
+  for (const { date, points } of chartData) console.log(`${pc.dim(date)} ${padNum(points, { color: true })}`);
 }
 
 (async () => {
@@ -79,9 +73,7 @@ function showDailyUsage(chartData) {
   showSparkline(chartData);
 
   for (const task of Object.keys(config.taskQuotas)) {
-    if (task === 'all') continue;
-
-    await taskQuotaSummary(task);
+    if (task !== 'all') await taskQuotaSummary(task);
   }
   await taskQuotaSummary();
 })();

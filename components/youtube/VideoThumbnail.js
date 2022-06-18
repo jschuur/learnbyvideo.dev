@@ -26,14 +26,13 @@ const thumbnailResolutions = {
   },
 };
 
-export default function VideoThumbnail({ res = 'medium', youtubeId, alt, ...rest }) {
+export default function VideoThumbnail({ res = 'medium', youtubeId, alt }) {
   return (
     <img
       width={thumbnailResolutions[res].width}
       height={thumbnailResolutions[res].height}
       src={`https://i.ytimg.com/vi/${youtubeId}/${thumbnailResolutions[res].prefix}default.jpg`}
       alt={alt}
-      {...rest}
     />
   );
 }

@@ -4,16 +4,13 @@ import { differenceBy, groupBy, map, merge, omit } from 'lodash-es';
 
 import prisma from '../prisma/prisma.mjs';
 import { error } from './util.mjs';
-import {
-  crawlChannel,
-  extractChannelInfo,
-  isShort,
-  videoStatus,
-  youtubeQuotaDate,
-} from './youtube.mjs';
+import { crawlChannel, extractChannelInfo, isShort, videoStatus, youtubeQuotaDate } from './youtube.mjs';
 import { youTubeChannelsList } from './youtubeApi.mjs';
 
 import config from './config.mjs';
+
+export const getChannels = (queryOptions) => prisma.channel.findMany(queryOptions);
+export const getChannel = (queryOptions) => prisma.channel.findUnique(queryOptions);
 
 export const getMonitoredChannels = ({ where = {}, ...options } = {}) =>
   getChannels({
@@ -22,15 +19,66 @@ export const getMonitoredChannels = ({ where = {}, ...options } = {}) =>
     orderBy: { lastPublishedAt: 'desc' },
   });
 
-export const getChannels = (queryOptions) => prisma.channel.findMany(queryOptions);
-export const getChannel = (queryOptions) => prisma.channel.findUnique(queryOptions);
-
 export const getVideos = (queryOptions) => prisma.video.findMany(queryOptions);
+
+export const updateChannel = (channel) => prisma.channel.update({ where: { id: channel.id }, data: channel });
+
+export const updateChannels = (channels = []) =>
+  Promise.all(
+    channels.map((channel) =>
+      prisma.channel.update({
+        where: {
+          youtubeId: channel.youtubeId,
+        },
+        data: channel,
+      })
+    )
+  );
+
+// Update the latestPublishedAt date for the channel
+export async function updateLastPublishedAt(channel) {
+  const latestVideo = await prisma.video.findFirst({
+    where: {
+      channelId: channel.id,
+      NOT: {
+        status: {
+          in: [VideoStatus.DELETED, VideoStatus.HIDDEN, VideoStatus.MODERATED],
+        },
+      },
+    },
+    orderBy: {
+      publishedAt: 'desc',
+    },
+  });
+
+  return updateChannel({ id: channel.id, lastPublishedAt: latestVideo.publishedAt });
+}
+
+export const updateVideo = (video) =>
+  prisma.video.update({
+    where: { youtubeId: video.youtubeId },
+    data: video,
+  });
+
+export function updateVideos(videos) {
+  if (!videos?.length) return [];
+
+  return Promise.all(
+    videos.map((video) =>
+      prisma.video.update({
+        where: {
+          youtubeId: video.youtubeId,
+        },
+        data: omit(video, 'channel'),
+      })
+    )
+  );
+}
 
 export async function upsertVideos(videos) {
   const newVideos = [];
 
-  if (!videos?.length) return;
+  if (!videos?.length) return null;
 
   // Get the incrementing video ID to identify if an upsert added a new video
   const lastVideoId = (
@@ -95,25 +143,6 @@ export async function upsertVideos(videos) {
   return newVideos;
 }
 
-// Update the latestPublishedAt date for the channel
-export async function updateLastPublishedAt(channel) {
-  const latestVideo = await prisma.video.findFirst({
-    where: {
-      channelId: channel.id,
-      NOT: {
-        status: {
-          in: [VideoStatus.DELETED, VideoStatus.HIDDEN, VideoStatus.MODERATED],
-        },
-      },
-    },
-    orderBy: {
-      publishedAt: 'desc',
-    },
-  });
-
-  return updateChannel({ id: channel.id, lastPublishedAt: latestVideo.publishedAt });
-}
-
 // Database check for which youtubeIds are new videos
 export async function removeKnownVideos(videos) {
   const existingVideos = await prisma.video.findMany({
@@ -133,29 +162,8 @@ export async function removeKnownVideos(videos) {
   return differenceBy(videos, existingVideos, 'youtubeId');
 }
 
-export const updateVideo = (video) =>
-  prisma.video.update({
-    where: { youtubeId: video.youtubeId },
-    data: video,
-  });
-
-export function updateVideos(videos) {
-  if (!videos?.length) return;
-
-  return Promise.all(
-    videos.map((video) =>
-      prisma.video.update({
-        where: {
-          youtubeId: video.youtubeId,
-        },
-        data: omit(video, 'channel'),
-      })
-    )
-  );
-}
-
 export async function saveChannel(channel) {
-  return await prisma.channel.upsert({
+  return prisma.channel.upsert({
     where: {
       youtubeId: channel.youtubeId,
     },
@@ -193,31 +201,16 @@ export async function addChannel({ youtubeId, lastCheckedAt, quotaTracker, crawl
         lastCheckedAt,
         crawlState: CrawlState.COMPLETED,
       });
+    }
 
-      return channel;
-    } else console.log(`Skipping video crawl for ${channel.channelName}`);
-  } catch (error) {
-    if (channel && crawlVideos)
-      await updateChannel({ id: channel.id, lastCheckedAt, crawlState: CrawlState.ERROR });
+    console.log(`Skipping video crawl for ${channel.channelName}`);
+  } catch ({ message }) {
+    if (channel && crawlVideos) await updateChannel({ id: channel.id, lastCheckedAt, crawlState: CrawlState.ERROR });
 
     throw error;
   }
+  return channel;
 }
-
-export const updateChannel = (channel) =>
-  prisma.channel.update({ where: { id: channel.id }, data: channel });
-
-export const updateChannels = (channels = []) =>
-  Promise.all(
-    channels.map((channel) =>
-      prisma.channel.update({
-        where: {
-          youtubeId: channel.youtubeId,
-        },
-        data: channel,
-      })
-    )
-  );
 
 export const addQuotaUsage = ({ endpoint, ...rest }) =>
   prisma.quotaUsage.create({
@@ -240,5 +233,6 @@ export async function todaysQuotaUsage(task) {
     where,
   });
 
+  // eslint-disable-next-line no-underscore-dangle
   return quotaUsage._sum.points || 0;
 }

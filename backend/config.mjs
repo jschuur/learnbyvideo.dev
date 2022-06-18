@@ -43,9 +43,8 @@ const config = {
 
   videoStatusHints: {
     PRIVATE: 'This is a private video',
-    DELETED_ACCOUNT:
-      'This video is no longer available because the uploader has closed their YouTube account',
-    UNAVAILABLE: `This video isn't available any more`,
+    DELETED_ACCOUNT: 'This video is no longer available because the uploader has closed their YouTube account',
+    UNAVAILABLE: `This video isn't available anymore`,
     REMOVED: `This video has been removed by the uploader`,
   },
 };

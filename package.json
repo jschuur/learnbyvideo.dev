@@ -56,16 +56,23 @@
     "react": "18.1.0",
     "react-dom": "18.1.0",
     "react-timeago": "^7.1.0",
-    "rss-parser": "^3.12.0"
+    "rss-parser": "^3.12.0",
+    "sparkline": "^0.2.0"
   },
   "devDependencies": {
     "autoprefixer": "^10.4.7",
     "dotenv-cli": "^5.1.0",
-    "eslint": "8.17.0",
+    "eslint": "^8.17.0",
+    "eslint-config-airbnb": "^19.0.4",
     "eslint-config-next": "12.1.6",
+    "eslint-config-prettier": "^8.5.0",
+    "eslint-plugin-import": "^2.26.0",
+    "eslint-plugin-jsx-a11y": "^6.5.1",
+    "eslint-plugin-prettier": "^4.0.0",
+    "eslint-plugin-react": "^7.30.0",
+    "eslint-plugin-react-hooks": "^4.6.0",
     "postcss": "^8.4.14",
     "prisma": "^3.15.1",
-    "sparkline": "^0.2.0",
     "tailwindcss": "^3.1.2"
   }
 }

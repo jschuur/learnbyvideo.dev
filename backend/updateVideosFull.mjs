@@ -8,7 +8,7 @@ import pluralize from 'pluralize';
 import { getVideos, updateVideo, updateVideos } from './db.mjs';
 import { debug, error, logMemoryUsage, logTimeSpent } from './util.mjs';
 import { getVideoDetails, missingVideoStatus, videoUrl } from './youtube.mjs';
-import { QuotaTracker } from './youtubeQuota.mjs';
+import QuotaTracker from './youtubeQuota.mjs';
 
 const options = minimost(process.argv.slice(2), {
   string: ['limit', 'offset', 'ids', 'min-last-published', 'order-by'],
@@ -47,9 +47,7 @@ function getVideosForUpdate({ minLastPublished, orderBy, allStatuses, ids, limit
 
   if (minLastPublished) {
     queryOptions.where.publishedAt = {
-      gte: minLastPublished
-        ? new Date(Date.now() - 1000 * 60 * 60 * 24 * parseInt(minLastPublished, 10))
-        : new Date(0),
+      gte: minLastPublished ? new Date(Date.now() - 1000 * 60 * 60 * 24 * parseInt(minLastPublished, 10)) : new Date(0),
     };
   } else if (ids) {
     queryOptions.where.youtubeId = { in: ids.split(',') };
@@ -68,7 +66,7 @@ function getVideosForUpdate({ minLastPublished, orderBy, allStatuses, ids, limit
   return getVideos(queryOptions);
 }
 
-// Scrap contents of video page to discern what happened to missing videos
+// Scrape contents of video page to discern what happened to missing videos
 async function markDeletedVideos({ videos, videoUpdates }) {
   // Get the difference between the videos we checked from the DB and what the API returned
   const deletedVideos = differenceBy(videos, videoUpdates, 'youtubeId');

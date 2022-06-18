@@ -1,16 +1,17 @@
 import PrismaClientPkg from '@prisma/client';
 
-const PrismaClient = PrismaClientPkg.PrismaClient;
+const { PrismaClient } = PrismaClientPkg;
 
-let prisma;
+function getPrisma() {
+  if (process.env.NODE_ENV === 'production') return new PrismaClient();
 
-if (process.env.NODE_ENV === 'production') {
-  prisma = new PrismaClient();
-} else {
   if (!global.prisma) {
     global.prisma = new PrismaClient();
   }
-  prisma = global.prisma;
+
+  return global.prisma;
 }
+
+const prisma = getPrisma();
 
 export default prisma;

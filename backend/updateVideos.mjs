@@ -17,7 +17,7 @@ import {
 import { updateHomePage } from './lib.mjs';
 import { error, logMemoryUsage, logTimeSpent, warn } from './util.mjs';
 import { getRecentVideosFromRSS, getVideoDetails } from './youtube.mjs';
-import { QuotaTracker } from './youtubeQuota.mjs';
+import QuotaTracker from './youtubeQuota.mjs';
 
 import config from './config.mjs';
 
@@ -50,14 +50,10 @@ async function getChannelsForUpdate({ minLastUpdated, maxLastUpdated, limit }) {
             {
               lastPublishedAt: {
                 gte: minLastUpdated
-                  ? new Date(
-                      Date.now() - 1000 * 60 * 60 * 24 * parseInt(options.minLastUpdated, 10)
-                    )
+                  ? new Date(Date.now() - 1000 * 60 * 60 * 24 * parseInt(options.minLastUpdated, 10))
                   : new Date(0),
                 lt: maxLastUpdated
-                  ? new Date(
-                      Date.now() - 1000 * 60 * 60 * 24 * parseInt(options.maxLastUpdated, 10)
-                    )
+                  ? new Date(Date.now() - 1000 * 60 * 60 * 24 * parseInt(options.maxLastUpdated, 10))
                   : new Date(),
               },
             },
@@ -89,9 +85,8 @@ async function findNewVideos(channels) {
       allNewVideos.push(...newVideos);
     }
 
-    // TODO use the API if a channel has 15 new videos
-    if (newVideos?.length === 15)
-      warn(`RSS feed for ${channel.channelName} has 15 new videos, check API for more`);
+    // TODO use the API if a channel has more than 15 new videos
+    if (newVideos?.length === 15) warn(`RSS feed for ${channel.channelName} has 15 new videos, check API for more`);
 
     // Don't spam the feed URLs
     await delay(config.RSS_FEED_UPDATE_DELAY_MS);
@@ -121,9 +116,7 @@ async function findRecheckVideos() {
   });
 
   if (videos?.length) {
-    console.log(
-      `Checking for status change of ${pluralize('upcoming/live video', videos.length, true)}`
-    );
+    console.log(`Checking for status change of ${pluralize('upcoming/live video', videos.length, true)}`);
   }
 
   return videos;
@@ -163,7 +156,7 @@ async function findRecheckVideos() {
     // Update the state of videos that we rechecked (upcoming, live)
     if (recheckVideosResult?.length) await updateVideos(recheckVideosResult);
 
-    for (const channel of channels) await updateChannel(channel);
+    await Promise.all(channels.map((channel) => updateChannel(channel)));
 
     if (process.env.NODE_ENV === 'production') await updateHomePage();
   } catch ({ message }) {

@@ -4,19 +4,19 @@ import { CrawlState } from '@prisma/client';
 import minimost from 'minimost';
 import pluralize from 'pluralize';
 
+import { getChannels, updateChannel, upsertVideos } from './db.mjs';
+import { error, logMemoryUsage, logTimeSpent } from './util.mjs';
+import { crawlChannel } from './youtube.mjs';
+import QuotaTracker from './youtubeQuota.mjs';
+
 const options = minimost(process.argv.slice(2), {
   string: ['max-channels'],
   boolean: ['force'],
   alias: {
     c: 'max-channels',
-    c: 'force',
+    f: 'force',
   },
 }).flags;
-
-import { getChannels, updateChannel, upsertVideos } from './db.mjs';
-import { error, logMemoryUsage, logTimeSpent } from './util.mjs';
-import { crawlChannel } from './youtube.mjs';
-import { QuotaTracker } from './youtubeQuota.mjs';
 
 // Crawls new channels for videos (e.g. is a channel was added quickly from a bookmarklet)
 (async () => {
@@ -34,7 +34,7 @@ import { QuotaTracker } from './youtubeQuota.mjs';
   // Get all the channels that still need crawling
   const channels = await getChannels({
     where: { crawlState: CrawlState.PENDING },
-    take: options.maxChannels ? parseInt(options.maxChannels) : undefined,
+    take: options.maxChannels ? parseInt(options.maxChannels, 10) : undefined,
   });
 
   console.log(`Crawling ${pluralize('channel', channels.length, true)}...`);

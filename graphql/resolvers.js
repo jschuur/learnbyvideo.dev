@@ -2,11 +2,11 @@ import { ChannelStatus, VideoStatus } from '@prisma/client';
 import { DateTimeResolver } from 'graphql-scalars';
 import PGTsquery from 'pg-tsquery';
 
-const searchTermParser = new PGTsquery.Tsquery();
-
 import config from '../backend/config.mjs';
 
-export const resolvers = {
+const searchTermParser = new PGTsquery.Tsquery();
+
+const resolvers = {
   DateTime: DateTimeResolver,
 
   SearchOrderByType: {
@@ -88,3 +88,5 @@ export const resolvers = {
       }),
   },
 };
+
+export default resolvers;

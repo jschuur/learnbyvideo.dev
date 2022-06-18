@@ -1,8 +1,8 @@
 import { youtubeDuration } from '../lib/util';
 
 export default function VideoCardOverlay({ duration, type, status }) {
-  let overlayBackground = 'red',
-    overlayText;
+  let overlayBackground = 'red';
+  let overlayText;
 
   if (type === 'SHORT') {
     overlayText = 'SHORT';

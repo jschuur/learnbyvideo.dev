@@ -7,7 +7,7 @@ import { getChannels, updateChannels } from './db.mjs';
 import { logMemoryUsage, logTimeSpent } from './util.mjs';
 import { extractChannelInfo } from './youtube.mjs';
 import { youTubeChannelsList } from './youtubeApi.mjs';
-import { QuotaTracker } from './youtubeQuota.mjs';
+import QuotaTracker from './youtubeQuota.mjs';
 
 (async () => {
   const startTime = Date.now();

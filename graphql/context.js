@@ -1,6 +1,6 @@
 import prisma from '../prisma/prisma.mjs';
 
-export async function createContext({ req, res }) {
+export async function createContext() {
   return {
     prisma,
   };

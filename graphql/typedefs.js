@@ -2,7 +2,7 @@ import { gql } from 'apollo-server-micro';
 
 import config from '../backend/config.mjs';
 
-export const typeDefs = gql`
+const typeDefs = gql`
   scalar DateTime
 
   type Channel {
@@ -109,3 +109,5 @@ export const typeDefs = gql`
       videoType: VideoType): [Video]!
   }
 `;
+
+export default typeDefs;

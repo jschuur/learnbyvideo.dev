@@ -2,9 +2,9 @@ import { makeExecutableSchema } from '@graphql-tools/schema';
 import { ApolloServer } from 'apollo-server-micro';
 import Cors from 'micro-cors';
 
-import { createContext } from '../../graphql/context.js';
-import { resolvers } from '../../graphql/resolvers.js';
-import { typeDefs } from '../../graphql/typedefs.js';
+import { createContext } from '../../graphql/context';
+import resolvers from '../../graphql/resolvers';
+import typeDefs from '../../graphql/typedefs';
 
 const cors = Cors();
 
@@ -15,16 +15,16 @@ const apolloServer = new ApolloServer({
 
 const startServer = apolloServer.start();
 
-export default cors(async function handler(req, res) {
+export default cors(async (req, res) => {
   if (req.method === 'OPTIONS') {
     res.end();
-    return false;
-  }
-  await startServer;
+  } else {
+    await startServer;
 
-  await apolloServer.createHandler({
-    path: '/api',
-  })(req, res);
+    await apolloServer.createHandler({
+      path: '/api',
+    })(req, res);
+  }
 });
 
 export const config = {

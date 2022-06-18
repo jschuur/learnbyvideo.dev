@@ -3,7 +3,6 @@ import { keyBy, map, uniqBy } from 'lodash-es';
 import fetch from 'node-fetch';
 import pluralize from 'pluralize';
 import Parser from 'rss-parser';
-const { formatInTimeZone } = dateFnsTz;
 
 import { ChannelStatus, VideoStatus } from '@prisma/client';
 
@@ -11,6 +10,8 @@ import { error, warn } from './util.mjs';
 import { youTubePlaylistItems, youTubeVideosList } from './youtubeApi.mjs';
 
 import config from './config.mjs';
+
+const { formatInTimeZone } = dateFnsTz;
 
 const rssParser = new Parser({
   customFields: {
@@ -24,8 +25,7 @@ const rssParser = new Parser({
 
 export const videoUrl = (youtubeId) => `https://www.youtube.com/watch?v=${youtubeId}`;
 export const channelUrl = (youtubeId) => `https://www.youtube.com/channel/${youtubeId}`;
-export const feedUrl = (youtubeId) =>
-  `https://www.youtube.com/feeds/videos.xml?channel_id=${youtubeId}`;
+export const feedUrl = (youtubeId) => `https://www.youtube.com/feeds/videos.xml?channel_id=${youtubeId}`;
 
 // Use the YouTube channel RSS feed to get recent videos
 export async function getRecentVideosFromRSS(channel) {
@@ -40,6 +40,56 @@ export async function getRecentVideosFromRSS(channel) {
   } catch ({ message }) {
     console.log(`Couldn't get recent videos for channel ${channelName}: ${message}`);
   }
+
+  return [];
+}
+
+export function videoStatus({ channel, video, snippet }) {
+  // Keep some video statuses, as they are set elsewhere
+  if (
+    video?.status &&
+    [
+      VideoStatus.MODERATED,
+      VideoStatus.DELETED,
+      VideoStatus.HIDDEN,
+      videoStatus.PUBLISHED,
+      videoStatus.UNLISTED,
+    ].includes(video.status)
+  )
+    return video.status;
+
+  if (channel?.status === ChannelStatus.MODERATED) return VideoStatus.MODERATED;
+  if (channel?.status === ChannelStatus.HIDDEN) return VideoStatus.HIDDEN;
+  if (snippet?.liveBroadcastContent === 'upcoming') return VideoStatus.UPCOMING;
+  if (snippet?.liveBroadcastContent === 'live') return VideoStatus.LIVE;
+
+  return VideoStatus.PUBLISHED;
+}
+
+// Turn Youtube's duration format like 'PT11M32S' into something more usable
+export function youtubeDuration(str) {
+  let toSeconds = -1;
+  let format = '-';
+  const pad = (num) => num.toString().padStart(2, '0');
+
+  const matches = str.match(/P((\d+)D)?T((\d+)H)?((\d+)M)?((\d+)S)?/);
+
+  if (matches) {
+    const [, , days = 0, , hours = 0, , minutes = 0, , seconds = 0] = matches;
+    toSeconds =
+      parseInt(days, 10) * 86400 + parseInt(hours, 10) * 3600 + parseInt(minutes, 10) * 60 + parseInt(seconds, 10);
+
+    format = days
+      ? `${days}:${pad(hours)}:${pad(minutes)}:${pad(seconds)}`
+      : hours
+      ? `${hours}:${pad(minutes)}:${pad(seconds)}`
+      : `${minutes}:${pad(seconds)}`;
+  }
+
+  return {
+    toSeconds,
+    format,
+  };
 }
 
 export function extractVideoInfo({ channel, video = {} }) {
@@ -47,8 +97,7 @@ export function extractVideoInfo({ channel, video = {} }) {
 
   if (!video) return {};
 
-  if (channel && video.channel)
-    warn(`Video channel already set in extractVideoInfo. Overriding (id: ${id})`);
+  if (channel && video.channel) warn(`Video channel already set in extractVideoInfo. Overriding (id: ${id})`);
   if (!channel && !video.channel) warn(`No video channel in extractVideoInfo (id: ${id})`);
 
   return {
@@ -58,9 +107,7 @@ export function extractVideoInfo({ channel, video = {} }) {
     description: snippet?.description,
     publishedAt: snippet?.publishedAt,
     duration: contentDetails?.duration,
-    durationSeconds: contentDetails?.duration
-      ? youtubeDuration(contentDetails.duration).toSeconds
-      : undefined,
+    durationSeconds: contentDetails?.duration ? youtubeDuration(contentDetails.duration).toSeconds : undefined,
     youtubeTags: snippet?.tags || [],
     language: snippet?.defaultAudioLanguage || undefined,
     viewCount: statistics?.viewCount ? parseInt(statistics.viewCount, 10) : undefined,
@@ -85,9 +132,7 @@ export function extractChannelInfo({ id, snippet, statistics }) {
     thumbnailMedium: snippet.thumbnails.medium.url,
     thumbnailHigh: snippet.thumbnails.high.url,
     viewCount: statistics.viewCount ? parseInt(statistics.viewCount, 10) : undefined,
-    subscriberCount: statistics.subscriberCount
-      ? parseInt(statistics.subscriberCount, 10)
-      : undefined,
+    subscriberCount: statistics.subscriberCount ? parseInt(statistics.subscriberCount, 10) : undefined,
     hiddenSubscriberCount: statistics.hiddenSubscriberCount || false,
     videoCount: statistics.videoCount ? parseInt(statistics.videoCount, 10) : undefined,
   };
@@ -113,56 +158,8 @@ export async function isShort({ youtubeId, title, publishedAt }) {
   }
 }
 
-export function videoStatus({ channel, video, snippet }) {
-  // Keep some video statuses, as they are set elsewhere
-  if (
-    video?.status &&
-    [
-      VideoStatus.MODERATED,
-      VideoStatus.DELETED,
-      VideoStatus.HIDDEN,
-      videoStatus.PUBLISHED,
-      videoStatus.UNLISTED,
-    ].includes(video.status)
-  )
-    return video.status;
-
-  if (channel?.status === ChannelStatus.MODERATED) return VideoStatus.MODERATED;
-  if (channel?.status === ChannelStatus.HIDDEN) return VideoStatus.HIDDEN;
-  if (snippet?.liveBroadcastContent === 'upcoming') return VideoStatus.UPCOMING;
-  if (snippet?.liveBroadcastContent === 'live') return VideoStatus.LIVE;
-
-  return VideoStatus.PUBLISHED;
-}
-
 // Swap out 'UC' at the start of a youTube ID to get the upload playlist ID
-export const uploadPlaylistIdFromChannelId = (youtubeId) => 'UU' + youtubeId.slice(2);
-
-// Turn Youtube's duration format like 'PT11M32S' into something more usable
-export function youtubeDuration(str) {
-  let toSeconds = -1,
-    format = '-';
-  const pad = (num) => num.toString().padStart(2, '0');
-
-  const matches = str.match(/P((\d+)D)?T((\d+)H)?((\d+)M)?((\d+)S)?/);
-
-  if (matches) {
-    const [, , days = 0, , hours = 0, , minutes = 0, , seconds = 0] = matches;
-    toSeconds =
-      parseInt(days) * 86400 + parseInt(hours) * 3600 + parseInt(minutes) * 60 + parseInt(seconds);
-
-    format = days
-      ? `${days}:${pad(hours)}:${pad(minutes)}:${pad(seconds)}`
-      : hours
-      ? `${hours}:${pad(minutes)}:${pad(seconds)}`
-      : `${minutes}:${pad(seconds)}`;
-  }
-
-  return {
-    toSeconds,
-    format,
-  };
-}
+export const uploadPlaylistIdFromChannelId = (youtubeId) => `UU${youtubeId.slice(2)}`;
 
 // YouTube API quota resets at midnight PDT
 export const youtubeQuotaDate = (date) =>
@@ -190,11 +187,10 @@ export async function crawlChannel({ channel, quotaTracker }) {
     });
 
     return videoData.map((video) => extractVideoInfo({ video, channel }));
-  } else {
-    warn(`No videos found for ${channel.channelName}`);
-
-    return [];
   }
+  warn(`No videos found for ${channel.channelName}`);
+
+  return [];
 }
 
 // Gets updates for batches of videos in a single API request
@@ -204,14 +200,9 @@ export async function getVideoDetails({ videos, quotaTracker, part = 'snippet,st
   const uniqueVideos = uniqBy(videos.flat(), 'youtubeId');
   if (!uniqueVideos?.length) return [];
 
-  const channelLookup = uniqueVideos.reduce(
-    (acc, video) => ({ ...acc, [video.youtubeId]: video.channel }),
-    {}
-  );
+  const channelLookup = uniqueVideos.reduce((acc, video) => ({ ...acc, [video.youtubeId]: video.channel }), {});
 
-  console.log(
-    `Getting video details for ${pluralize('video', uniqueVideos.length, true)} from YouTube API...`
-  );
+  console.log(`Getting video details for ${pluralize('video', uniqueVideos.length, true)} from YouTube API...`);
 
   const videoData = await youTubeVideosList({
     part,
@@ -239,8 +230,5 @@ export async function missingVideoStatus(youtubeId) {
   const page = await fetch(videoUrl(youtubeId));
   const body = await page.text();
 
-  for (const [status, hint] of Object.entries(config.videoStatusHints))
-    if (body.includes(hint)) return status;
-
-  return 'UNKNOWN';
+  return Object.entries(config.videoStatusHints).find(([, hint]) => body.includes(hint))?.[0] || 'UNKNOWN';
 }
