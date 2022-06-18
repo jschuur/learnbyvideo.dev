@@ -109,6 +109,7 @@ enum ChannelLinkType {
   Patreon
   Shop
   Discord
+  Slack
   Links // Linktree etc.
   Link
   TikTok
@@ -139,6 +140,8 @@ model Video {
   createdAt          DateTime    @default(now())
   updatedAt          DateTime    @updatedAt
   publishedAt        DateTime
+
+  @@index([status])
 }
 
 enum VideoStatus {
