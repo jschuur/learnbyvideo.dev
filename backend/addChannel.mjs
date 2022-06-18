@@ -1,11 +1,22 @@
 #!/usr/bin/env node
 import 'dotenv/config';
 
+import minimost from 'minimost';
+
 import { addChannel } from './db.mjs';
 import { updateHomePage } from './lib.mjs';
 import { error, logMemoryUsage, logTimeSpent } from './util.mjs';
 import { youTubeVideosList } from './youtubeApi.mjs';
 import QuotaTracker from './youtubeQuota.mjs';
+
+const { flags: options, input: youtubeIds } = minimost(process.argv.slice(2), {
+  string: ['status', 'default-category', 'type'],
+  alias: {
+    s: 'status',
+    c: 'default-category',
+    t: 'type',
+  },
+});
 
 (async () => {
   const startTime = Date.now();
@@ -17,7 +28,7 @@ import QuotaTracker from './youtubeQuota.mjs';
   await quotaTracker.showSummary();
   console.log();
 
-  for (const id of process.argv.slice(2)) {
+  for (const id of youtubeIds) {
     try {
       const youtubeId = id.startsWith('UC')
         ? id
@@ -26,7 +37,12 @@ import QuotaTracker from './youtubeQuota.mjs';
       if (!youtubeId) throw Error('No channel found');
 
       await addChannel({
-        youtubeId,
+        data: {
+          youtubeId,
+          status: options.status?.toUpperCase(),
+          type: options.type?.toUpperCase(),
+          defaultCategory: options.defaultCategory?.toUpperCase(),
+        },
         lastCheckedAt: new Date(startTime),
         quotaTracker,
         crawlVideos: true,

@@ -51,7 +51,7 @@ export async function updateLastPublishedAt(channel) {
     },
   });
 
-  return updateChannel({ id: channel.id, lastPublishedAt: latestVideo.publishedAt });
+  if (latestVideo) await updateChannel({ id: channel.id, lastPublishedAt: latestVideo.publishedAt });
 }
 
 export const updateVideo = (video) =>
@@ -132,11 +132,11 @@ export async function upsertVideos(videos) {
             await Promise.allSettled([delay(config.SHORTS_CHECK_DELAY_MS), updateVideo(video)]);
           }
         }
-
-        await updateLastPublishedAt(channel);
       } catch ({ message }) {
         error(`Couldn't save video update for '${video.title}': ${message}`);
       }
+
+      await updateLastPublishedAt(channel);
     }
   }
 
@@ -172,7 +172,8 @@ export async function saveChannel(channel) {
   });
 }
 
-export async function addChannel({ youtubeId, lastCheckedAt, quotaTracker, crawlVideos }) {
+export async function addChannel({ data, lastCheckedAt, quotaTracker, crawlVideos }) {
+  const { youtubeId, ...customChannelData } = data;
   let channel;
 
   console.log(`Processing https://youtube.com/channel/${youtubeId}`);
@@ -186,7 +187,7 @@ export async function addChannel({ youtubeId, lastCheckedAt, quotaTracker, crawl
 
     if (!channelData?.length) throw Error(`Invalid channel ID`);
 
-    channel = await saveChannel(extractChannelInfo(channelData[0]));
+    channel = await saveChannel({ ...extractChannelInfo(channelData[0]), ...customChannelData });
 
     console.log(`Adding videos for ${channel.channelName}`);
 
