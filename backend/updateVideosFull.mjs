@@ -6,6 +6,7 @@ import minimost from 'minimost';
 import pluralize from 'pluralize';
 
 import { getVideos, updateVideo, updateVideos } from './db.mjs';
+import { updateHomePage } from './lib.mjs';
 import { debug, error, logMemoryUsage, logTimeSpent } from './util.mjs';
 import { getVideoDetails, missingVideoStatus, videoUrl } from './youtube.mjs';
 import QuotaTracker from './youtubeQuota.mjs';
@@ -14,7 +15,7 @@ import config from './config.mjs';
 
 const options = minimost(process.argv.slice(2), {
   string: ['limit', 'offset', 'ids', 'min-last-published', 'order-by'],
-  boolean: ['force', 'all-statuses'],
+  boolean: ['force', 'all-statuses', 'revalidate'],
   default: { 'order-by': 'updated' },
   alias: {
     l: 'limit',
@@ -24,6 +25,7 @@ const options = minimost(process.argv.slice(2), {
     b: 'order-by',
     f: 'force',
     a: 'all-statuses',
+    r: 'revalidate',
   },
 }).flags;
 
@@ -98,7 +100,7 @@ async function markDeletedVideos({ videos, videoUpdates }) {
 }
 
 (async () => {
-  const { force, limit, minLastPublished, ids } = options;
+  const { force, limit, minLastPublished, ids, revalidate } = options;
 
   if (!(limit || minLastPublished || ids)) {
     error('Specify either a channel count --limit, video --ids list or a --min-last-published time in days');
@@ -127,6 +129,8 @@ async function markDeletedVideos({ videos, videoUpdates }) {
     await updateVideos(videoUpdates);
 
     await markDeletedVideos({ videos, videoUpdates });
+
+    if (process.env.NODE_ENV === 'production' && revalidate) await updateHomePage();
   } catch ({ message }) {
     error(message);
   }
