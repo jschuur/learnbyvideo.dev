@@ -32,6 +32,7 @@ export async function getStaticProps(context) {
           title
           status
           youtubeId
+          updatedAt
           publishedAt
           scheduledStartTime
           actualStartTime
@@ -49,10 +50,13 @@ export async function getStaticProps(context) {
     `,
   });
 
+  const { recentVideos } = response.data;
+  const lastUpdated = Math.max(...recentVideos.map((v) => new Date(v.updatedAt).getTime()));
+
   return {
     props: {
-      videos: JSON.parse(JSON.stringify(response.data.recentVideos)),
-      lastUpdated: new Date().toLocaleString(),
+      videos: JSON.parse(JSON.stringify(recentVideos)),
+      lastUpdated,
       videoCount: response.data.videoCount,
       channelCount: response.data.channelCount,
     },
