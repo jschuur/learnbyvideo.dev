@@ -11,6 +11,7 @@ const config = {
     ['GRAPHQL_DEFAULT_SEARCH_RESULTS_LIMIT', 96],
     ['GRAPHQL_MAX_SEARCH_RESULTS_LIMIT', 500],
     ['MAX_YOUTUBE_BATCH_SIZE', 50],
+    ['MAX_VIDEO_UPDATE_COUNT', 5000],
   ]),
 
   taskQuotas: {
