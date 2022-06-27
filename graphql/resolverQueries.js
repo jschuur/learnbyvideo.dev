@@ -35,6 +35,8 @@ export const video = (_parent, _args, ctx) =>
 export const videoCount = (_parent, _args, ctx) => ctx.prisma.video.count();
 
 export async function recentVideos(_parent, _args, ctx) {
+  const count = Math.min(_args.count, config.GRAPHQL_MAX_RECENT_VIDEOS);
+
   const sharedOptions = {
     where: {
       channel: {
@@ -52,7 +54,7 @@ export async function recentVideos(_parent, _args, ctx) {
         },
       },
     },
-    take: Math.trunc(Math.min(_args.count, config.GRAPHQL_MAX_RECENT_VIDEOS)),
+    take: count,
   };
 
   const [recent, live] = await Promise.all([
@@ -85,7 +87,7 @@ export async function recentVideos(_parent, _args, ctx) {
   // Merge in the live videos based on their actual start time sorted among other videos' published time
   return sortBy([...recent, ...live], (v) => v.actualStartTime || v.publishedAt)
     .reverse()
-    .slice(0, config.GRAPHQL_MAX_RECENT_VIDEOS);
+    .slice(0, count);
 }
 
 export const searchVideos = (_parent, _args, ctx) =>

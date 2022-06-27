@@ -28,7 +28,7 @@ export async function getStaticProps(context) {
   const response = await client.query({
     query: gql`
       query Query {
-        recentVideos(count: ${process.env.NEXT_PUBLIC_VIDEO_GRID_COUNT || 96}) {
+        recentVideos(count: ${process.env.NEXT_PUBLIC_VIDEO_GRID_COUNT || 120}) {
           title
           status
           youtubeId
