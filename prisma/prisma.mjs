@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import PrismaClientPkg from '@prisma/client';
 
 const { PrismaClient } = PrismaClientPkg;
@@ -6,7 +7,15 @@ function getPrisma() {
   if (process.env.NODE_ENV === 'production') return new PrismaClient();
 
   if (!global.prisma) {
-    global.prisma = new PrismaClient();
+    const debugMode = process.env.DEBUG >= 2;
+    global.prisma = new PrismaClient(debugMode ? { log: [{ emit: 'event', level: 'query' }] } : undefined);
+
+    if (debugMode)
+      global.prisma.$on('query', (e) => {
+        console.log(`Query: ${e.query}`);
+        console.log(`Params: ${e.params}`);
+        console.log(`Duration: ${e.duration}ms`);
+      });
   }
 
   return global.prisma;

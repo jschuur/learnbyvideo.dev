@@ -1,9 +1,10 @@
 import { CrawlState, VideoStatus, VideoType } from '@prisma/client';
 import delay from 'delay';
 import { differenceBy, groupBy, map, merge, omit } from 'lodash-es';
+import pluralize from 'pluralize';
 
 import prisma from '../prisma/prisma.mjs';
-import { error } from './util.mjs';
+import { debug, error } from './util.mjs';
 import { crawlChannel, extractChannelInfo, isShort, videoStatus, youtubeQuotaDate } from './youtube.mjs';
 import { youTubeChannelsList } from './youtubeApi.mjs';
 
@@ -21,7 +22,9 @@ export const getMonitoredChannels = ({ where = {}, ...options } = {}) =>
 
 export const getVideos = (queryOptions) => prisma.video.findMany(queryOptions);
 
-export const updateChannel = (channel) => prisma.channel.update({ where: { id: channel.id }, data: channel });
+export const updateChannel = ({ id, ...rest }) => prisma.channel.update({ where: { id }, data: rest });
+
+export const updateChannelMany = ({ where, data }) => prisma.channel.updateMany({ where, data });
 
 export const updateChannels = (channels = []) =>
   Promise.all(
@@ -140,6 +143,8 @@ export async function upsertVideos(videos) {
     }
   }
 
+  if (newVideos?.length) console.log(`\nAdded ${pluralize('new video', newVideos.length, true)} in total`);
+
   return newVideos;
 }
 
@@ -236,4 +241,37 @@ export async function todaysQuotaUsage(task) {
 
   // eslint-disable-next-line no-underscore-dangle
   return quotaUsage._sum.points || 0;
+}
+
+// Videos that should always be rechecked (i.e. upcoming or live)
+export async function getRecheckVideos({ include } = {}) {
+  // TODO: Only recheck videos from the last 31 days
+
+  const where = {
+    OR: [
+      {
+        status: { in: [VideoStatus.UPCOMING, VideoStatus.LIVE] },
+      },
+      {
+        scheduledStartTime: { not: null },
+        actualStartTime: null,
+      },
+    ],
+    NOT: {
+      status: {
+        in: [VideoStatus.DELETED, VideoStatus.PRIVATE, VideoStatus.UNKNOWN],
+      },
+    },
+  };
+
+  if (include) where.OR.push(...[include].flat());
+
+  debug(where);
+
+  return getVideos({
+    where,
+    include: {
+      channel: true,
+    },
+  });
 }

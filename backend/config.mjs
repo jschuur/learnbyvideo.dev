@@ -12,13 +12,14 @@ const config = {
     ['GRAPHQL_MAX_SEARCH_RESULTS_LIMIT', 500],
     ['MAX_YOUTUBE_BATCH_SIZE', 50],
     ['MAX_VIDEO_UPDATE_COUNT', 5000],
+    ['RECENT_VIDEOS_RECHECK_HOURS', 24],
   ]),
 
   taskQuotas: {
     all: 10000,
     crawl_channels: 2000,
-    update_videos: 1000,
-    update_videos_full: 3000,
+    find_videos: 1000,
+    update_videos: 3000,
     update_channels: 500,
     add_channel: 2000,
   },

@@ -141,18 +141,18 @@ export function extractChannelInfo({ id, snippet, statistics }) {
 export async function isShort({ youtubeId, title, publishedAt }) {
   const shortsUrl = `https://www.youtube.com/shorts/${youtubeId}`;
 
-  // Many Shorts used this hashtag
-  if (title.toLowerCase().includes('#shorts')) return true;
-
   // Launch date for Shorts
   if (publishedAt < '2021-09-01') return false;
+
+  // Many Shorts used this hashtag
+  if (title.toLowerCase().includes('#shorts')) return true;
 
   try {
     const res = await fetch(shortsUrl, { method: 'head' });
 
     return res?.url?.startsWith(shortsUrl);
   } catch ({ message }) {
-    error(`Couldn't validating new video for Short, ID ${youtubeId} (${title}): ${message}`);
+    error(`Couldn't validate new video for Short, ID ${youtubeId} (${title}): ${message}`);
 
     return false;
   }
@@ -229,6 +229,8 @@ export async function getVideoDetails({ videos, quotaTracker, part = 'snippet,st
 export async function missingVideoStatus(youtubeId) {
   const page = await fetch(videoUrl(youtubeId));
   const body = await page.text();
+
+  // TODO: Handle redirect when video is too long (try https://www.youtube.com/watch?v=dQw4w9WgXcQJOOST)
 
   return Object.entries(config.videoStatusHints).find(([, hint]) => body.includes(hint))?.[0] || 'UNKNOWN';
 }

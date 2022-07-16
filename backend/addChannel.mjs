@@ -28,8 +28,11 @@ const { flags: options, input: youtubeIds } = minimost(process.argv.slice(2), {
   await quotaTracker.showSummary();
   console.log();
 
-  for (const id of youtubeIds) {
+  for (let id of youtubeIds) {
     try {
+      id = id.replace('https://www.youtube.com/watch?v=', '');
+      id = id.replace('https://www.youtube.com/channel/', '');
+
       const youtubeId = id.startsWith('UC')
         ? id
         : (await youTubeVideosList({ ids: [id], quotaTracker }))?.[0]?.snippet?.channelId;
