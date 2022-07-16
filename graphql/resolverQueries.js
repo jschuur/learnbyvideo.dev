@@ -1,5 +1,5 @@
 import { ChannelStatus, VideoStatus } from '@prisma/client';
-import { merge, sortBy } from 'lodash-es';
+import { merge, sortBy, uniqBy } from 'lodash-es';
 import PGTsquery from 'pg-tsquery';
 
 import config from '../backend/config.mjs';
@@ -84,8 +84,11 @@ export async function recentVideos(_parent, _args, ctx) {
     ),
   ]);
 
+  // Deduplicate
+  const videos = uniqBy([...recent, ...live], 'youtubeId');
+
   // Merge in the live videos based on their actual start time sorted among other videos' published time
-  return sortBy([...recent, ...live], (v) => v.actualStartTime || v.publishedAt)
+  return sortBy(videos, (v) => v.actualStartTime || v.publishedAt)
     .reverse()
     .slice(0, count);
 }
