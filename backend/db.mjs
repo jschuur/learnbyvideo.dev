@@ -266,7 +266,7 @@ export async function getRecheckVideos({ include } = {}) {
 
   if (include) where.OR.push(...[include].flat());
 
-  debug(where);
+  debug(JSON.stringify(where, null, 2));
 
   return getVideos({
     where,

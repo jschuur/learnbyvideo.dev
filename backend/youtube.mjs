@@ -44,6 +44,10 @@ export async function getRecentVideosFromRSS(channel) {
   return [];
 }
 
+const videoOverdue = (video) =>
+  video?.liveStreamingDetails?.scheduledStartTime &&
+  new Date() - new Date(video?.liveStreamingDetails?.scheduledStartTime) > config.VIDEO_OVERDUE_MINUTES * 60 * 1000;
+
 export function videoStatus({ channel, video, snippet }) {
   // Keep some video statuses, as they are set elsewhere
   if (
@@ -60,8 +64,11 @@ export function videoStatus({ channel, video, snippet }) {
 
   if (channel?.status === ChannelStatus.MODERATED) return VideoStatus.MODERATED;
   if (channel?.status === ChannelStatus.HIDDEN) return VideoStatus.HIDDEN;
-  if (snippet?.liveBroadcastContent === 'upcoming') return VideoStatus.UPCOMING;
   if (snippet?.liveBroadcastContent === 'live') return VideoStatus.LIVE;
+
+  // Some upcoming videos never go live
+  if (snippet?.liveBroadcastContent === 'upcoming')
+    return videoOverdue(video) ? VideoStatus.OVERDUE : VideoStatus.UPCOMING;
 
   return VideoStatus.PUBLISHED;
 }
