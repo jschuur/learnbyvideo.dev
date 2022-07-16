@@ -13,6 +13,7 @@ const config = {
     ['MAX_YOUTUBE_BATCH_SIZE', 50],
     ['MAX_VIDEO_UPDATE_COUNT', 5000],
     ['RECENT_VIDEOS_RECHECK_HOURS', 24],
+    ['VIDEO_OVERDUE_MINUTES', 180],
   ]),
 
   taskQuotas: {
