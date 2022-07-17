@@ -60,7 +60,14 @@ async function taskQuotaSummary(taskName) {
 }
 
 const showSparkline = (chartData) =>
-  console.log(` ${pc.yellow(sparkline(map(chartData, 'points'), { min: 0, max: QUOTA_LIMIT }))}\n`);
+  console.log(
+    ` ${pc.yellow(
+      sparkline(
+        map(chartData, ({ points }) => Number(points)),
+        { min: 0, max: QUOTA_LIMIT }
+      )
+    )}\n`
+  );
 
 function showDailyUsage(chartData) {
   for (const { date, points } of chartData) console.log(`${pc.dim(date)} ${padNum(points, { color: true })}`);
