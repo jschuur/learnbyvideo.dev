@@ -30,7 +30,7 @@
     "db:push:prod": "dotenv -e .env.production cross-var -- pg_restore --no-acl --no-owner --clean -d '%DATABASE_URL%' tmp/dbdump_local_latest.dump",
     "db:push": "npm run db:dump:local:latest && npm run db:push:prod",
     "deploy:backend": "ssh node 'cd learnbyvideo.dev && npm run update:backend'",
-    "update:backend": "git checkout backend && git reset --hard && git pull && npm install"
+    "update:backend": "git checkout backend && git reset --hard && git pull && npm install && npx prisma generate"
   },
   "dependencies": {
     "@apollo/client": "^3.6.7",
