@@ -91,6 +91,7 @@ const typeDefs = gql`
     scheduledStartTime: DateTime
     actualStartTime: DateTime
     actualEndTime: DateTime
+    sortTime: DateTime
   }
 
   type Query {

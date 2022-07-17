@@ -137,6 +137,7 @@ model Video {
   scheduledStartTime DateTime?
   actualStartTime    DateTime?
   actualEndTime      DateTime?
+  sortTime           DateTime?
   createdAt          DateTime    @default(now())
   updatedAt          DateTime    @updatedAt
   publishedAt        DateTime

@@ -1,5 +1,4 @@
 import { ChannelStatus, VideoStatus } from '@prisma/client';
-import { merge, sortBy, uniqBy } from 'lodash-es';
 import PGTsquery from 'pg-tsquery';
 
 import config from '../backend/config.mjs';
@@ -34,10 +33,8 @@ export const video = (_parent, _args, ctx) =>
 
 export const videoCount = (_parent, _args, ctx) => ctx.prisma.video.count();
 
-export async function recentVideos(_parent, _args, ctx) {
-  const count = Math.min(_args.count, config.GRAPHQL_MAX_RECENT_VIDEOS);
-
-  const sharedOptions = {
+export const recentVideos = (_parent, _args, ctx) =>
+  ctx.prisma.video.findMany({
     where: {
       channel: {
         NOT: {
@@ -45,6 +42,9 @@ export async function recentVideos(_parent, _args, ctx) {
             in: [ChannelStatus.HIDDEN, ChannelStatus.ARCHIVED],
           },
         },
+      },
+      status: {
+        in: [VideoStatus.UPCOMING, VideoStatus.LIVE, VideoStatus.PUBLISHED],
       },
     },
     include: {
@@ -54,44 +54,11 @@ export async function recentVideos(_parent, _args, ctx) {
         },
       },
     },
-    take: count,
-  };
-
-  const [recent, live] = await Promise.all([
-    ctx.prisma.video.findMany(
-      merge({}, sharedOptions, {
-        where: {
-          status: {
-            in: [VideoStatus.LIVE, VideoStatus.UPCOMING, VideoStatus.PUBLISHED],
-          },
-        },
-        orderBy: {
-          publishedAt: 'desc',
-        },
-      })
-    ),
-    ctx.prisma.video.findMany(
-      merge({}, sharedOptions, {
-        where: {
-          status: {
-            in: [VideoStatus.LIVE],
-          },
-        },
-        orderBy: {
-          actualStartTime: 'desc',
-        },
-      })
-    ),
-  ]);
-
-  // Deduplicate
-  const videos = uniqBy([...recent, ...live], 'youtubeId');
-
-  // Merge in the live videos based on their actual start time sorted among other videos' published time
-  return sortBy(videos, (v) => v.actualStartTime || v.publishedAt)
-    .reverse()
-    .slice(0, count);
-}
+    orderBy: {
+      sortTime: 'desc',
+    },
+    take: Math.min(_args.count, config.GRAPHQL_MAX_RECENT_VIDEOS),
+  });
 
 export const searchVideos = (_parent, _args, ctx) =>
   ctx.prisma.video.findMany({

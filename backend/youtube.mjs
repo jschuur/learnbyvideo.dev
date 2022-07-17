@@ -123,6 +123,7 @@ export function extractVideoInfo({ channel, video = {} }) {
     scheduledStartTime: liveStreamingDetails?.scheduledStartTime,
     actualStartTime: liveStreamingDetails?.actualStartTime,
     actualEndTime: liveStreamingDetails?.actualEndTime,
+    sortTime: liveStreamingDetails?.actualStartTime || snippet?.publishedAt,
     status: videoStatus({ channel, video, snippet }),
   };
 }
