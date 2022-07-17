@@ -97,7 +97,7 @@ const typeDefs = gql`
   type Query {
     allChannels: [Channel]
     channel(id: ID): Channel!
-    recentVideos(count: Int = 24): [Video]!
+    recentVideos(count: Int = ${config.GRAPHQL_DEFAULT_RECENT_VIDEOS_LIMIT}, offset: Int = 0): [Video]!
     video(id: ID): Video
     videoCount: Int!
     channelCount: Int!

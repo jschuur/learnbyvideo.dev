@@ -58,6 +58,7 @@ export const recentVideos = (_parent, _args, ctx) =>
       sortTime: 'desc',
     },
     take: Math.min(_args.count, config.GRAPHQL_MAX_RECENT_VIDEOS),
+    skip: _args.offset,
   });
 
 export const searchVideos = (_parent, _args, ctx) =>
