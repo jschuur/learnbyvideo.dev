@@ -8,14 +8,14 @@ import Footer from '../components/layout/Footer';
 import Header from '../components/layout/Header';
 import VideoGrid from '../components/VideoGrid';
 
-export default function HomePage({ videos, videoCount, channelCount, lastUpdated }) {
+export default function HomePage({ recentVideos, videoCount, channelCount, lastUpdated }) {
   return (
     <div className="container mx-auto px-10">
       <Head>
         <title>LearnByVideo.dev - Find the best web development tutorial videos</title>
       </Head>
       <Header />
-      <VideoGrid videos={videos} />
+      <VideoGrid initialVideoData={recentVideos} />
       <Footer videoCount={videoCount} channelCount={channelCount} lastUpdated={lastUpdated} />
     </div>
   );
@@ -29,19 +29,24 @@ export async function getStaticProps(context) {
     query: gql`
       query Query {
         recentVideos(limit: ${process.env.NEXT_PUBLIC_VIDEO_GRID_COUNT || 120}) {
-          title
-          status
-          youtubeId
-          updatedAt
-          publishedAt
-          scheduledStartTime
-          actualStartTime
-          createdAt
-          duration
-          type
-          channel {
-            channelName
+          videos {
+            title
+            status
+            youtubeId
+            updatedAt
+            publishedAt
+            scheduledStartTime
+            actualStartTime
+            createdAt
+            duration
             type
+            channel {
+              channelName
+              type
+            }
+          }
+          pageInfo {
+            nextPage
           }
         }
         videoCount
@@ -51,11 +56,11 @@ export async function getStaticProps(context) {
   });
 
   const { recentVideos } = response.data;
-  const lastUpdated = Math.max(...recentVideos.map((v) => new Date(v.updatedAt).getTime()));
+  const lastUpdated = Math.max(...recentVideos.videos.map((v) => new Date(v.updatedAt).getTime()));
 
   return {
     props: {
-      videos: JSON.parse(JSON.stringify(recentVideos)),
+      recentVideos: JSON.parse(JSON.stringify(recentVideos)),
       lastUpdated,
       videoCount: response.data.videoCount,
       channelCount: response.data.channelCount,
