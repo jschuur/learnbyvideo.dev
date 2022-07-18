@@ -33,8 +33,8 @@ export const video = (_parent, _args, ctx) =>
 
 export const videoCount = (_parent, _args, ctx) => ctx.prisma.video.count();
 
-export const recentVideos = (_parent, _args, ctx) =>
-  ctx.prisma.video.findMany({
+export async function recentVideos(_parent, _args, ctx) {
+  const videos = await ctx.prisma.video.findMany({
     where: {
       channel: {
         NOT: {
@@ -54,12 +54,26 @@ export const recentVideos = (_parent, _args, ctx) =>
         },
       },
     },
+    cursor: _args.cursor
+      ? {
+          id: _args.cursor,
+        }
+      : undefined,
+    skip: _args.cursor ? 1 : 0,
     orderBy: {
       sortTime: 'desc',
     },
-    take: Math.min(_args.count, config.GRAPHQL_MAX_RECENT_VIDEOS),
-    skip: _args.offset,
+    take: Math.min(_args.limit, config.GRAPHQL_MAX_RECENT_VIDEOS),
   });
+
+  return {
+    videos,
+    pageInfo: {
+      count: videos.length,
+      nextPage: videos[videos.length - 1].id,
+    },
+  };
+}
 
 export const searchVideos = (_parent, _args, ctx) =>
   ctx.prisma.video.findMany({

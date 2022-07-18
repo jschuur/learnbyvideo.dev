@@ -97,7 +97,7 @@ const typeDefs = gql`
   type Query {
     allChannels: [Channel]
     channel(id: ID): Channel!
-    recentVideos(count: Int = ${config.GRAPHQL_DEFAULT_RECENT_VIDEOS_LIMIT}, offset: Int = 0): [Video]!
+    recentVideos(limit: Int = ${config.GRAPHQL_DEFAULT_RECENT_VIDEOS_LIMIT}, cursor: Int): RecentVideos!
     video(id: ID): Video
     videoCount: Int!
     channelCount: Int!
@@ -108,6 +108,16 @@ const typeDefs = gql`
       orderBy: SearchOrderByType = VIEWCOUNT,
       orderDirection: SearchOrderDirectionType = DESC,
       videoType: VideoType): [Video]!
+  }
+
+  type PageInfo {
+    count: Int!
+    nextPage: Int!
+  }
+
+  type RecentVideos {
+    videos: [Video]!
+    pageInfo: PageInfo!
   }
 `;
 
