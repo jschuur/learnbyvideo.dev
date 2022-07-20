@@ -10,19 +10,19 @@ const sortVideos = (videos) => partition(videos, { status: 'LIVE' }).flat();
 
 export default function VideoGrid({ initialVideoData }) {
   const [sortedVideos, setSortedVideos] = useState(sortVideos(initialVideoData.videos));
-  const [nextPage, setNextPage] = useState(initialVideoData.pageInfo.nextPage);
+  const [nextOffset, setNextOffset] = useState(initialVideoData.pageInfo.nextOffset);
 
   const { data } = useQuery(['videos'], fetchRecentVideos, { initialData: initialVideoData, staleTime: Infinity });
 
   const loadNextPage = async () => {
-    const { videos, pageInfo } = await fetchRecentVideos(nextPage);
-    setNextPage(pageInfo.nextPage);
+    const { videos, pageInfo } = await fetchRecentVideos(nextOffset);
+    setNextOffset(pageInfo.nextOffset);
     setSortedVideos((v) => [...v, ...videos]);
   };
 
   useEffect(() => {
     setSortedVideos(sortVideos(data.videos));
-    setNextPage(data.pageInfo.nextPage);
+    setNextOffset(data.pageInfo.nextOffset);
   }, [data]);
 
   return (

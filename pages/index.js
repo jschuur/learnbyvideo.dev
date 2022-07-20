@@ -46,7 +46,7 @@ export async function getStaticProps(context) {
             }
           }
           pageInfo {
-            nextPage
+            nextOffset
           }
         }
         videoCount
