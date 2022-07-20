@@ -1,48 +1,46 @@
-import { partition } from 'lodash-es';
-import { useEffect, useState } from 'react';
-import { useQuery } from 'react-query';
-
-import VideoCard from './VideoCard';
+import { flatMap, partition } from 'lodash-es';
+import { useInfiniteQuery } from 'react-query';
 
 import { fetchRecentVideos } from '../lib/request';
 
-const sortVideos = (videos) => partition(videos, { status: 'LIVE' }).flat();
+import VideoCard from './VideoCard';
+
+const sortVideoData = (data) => partition(flatMap(data.pages, 'videos'), { status: 'LIVE' }).flat();
 
 export default function VideoGrid({ initialVideoData }) {
-  const [sortedVideos, setSortedVideos] = useState(sortVideos(initialVideoData.videos));
-  const [nextOffset, setNextOffset] = useState(initialVideoData.pageInfo.nextOffset);
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, status, error } = useInfiniteQuery(
+    ['recentVideos'],
+    fetchRecentVideos,
+    {
+      initialData: { pages: [initialVideoData] },
+      getNextPageParam: (lastPage) => lastPage.pageInfo.nextOffset,
+      staleTime: Infinity,
+    }
+  );
 
-  const { data } = useQuery(['videos'], fetchRecentVideos, { initialData: initialVideoData, staleTime: Infinity });
-
-  const loadNextPage = async () => {
-    const { videos, pageInfo } = await fetchRecentVideos(nextOffset);
-    setNextOffset(pageInfo.nextOffset);
-    setSortedVideos((v) => [...v, ...videos]);
-  };
-
-  useEffect(() => {
-    setSortedVideos(sortVideos(data.videos));
-    setNextOffset(data.pageInfo.nextOffset);
-  }, [data]);
-
-  return (
+  return status === 'loading' ? (
+    <div className="mt-4 p-2 text-center border-black border">Loading...</div>
+  ) : status === 'error' ? (
+    <div className="mt-4 p-2 text-center border-red-600 border">Error: {error.message}</div>
+  ) : (
     <div>
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-        {sortedVideos.map((video) => (
+        {sortVideoData(data).map((video) => (
           <div key={video.youtubeId}>
             <VideoCard video={video} />
           </div>
         ))}
       </div>
       <div
-        onClick={loadNextPage}
-        onKeyPress={loadNextPage}
+        onClick={() => fetchNextPage()}
+        onKeyPress={() => fetchNextPage()}
+        disabled={!hasNextPage || isFetchingNextPage}
         role="button"
         tabIndex={0}
         className="mt-4 p-2 text-center border-black border"
       >
         {' '}
-        Load More
+        {isFetchingNextPage ? 'Loading more...' : 'Load More'}
       </div>
     </div>
   );
