@@ -1,17 +1,21 @@
 /* eslint-disable react/jsx-props-no-spreading */
 
+import { useState } from 'react';
+
 import '../styles/globals.css';
 
-import { QueryClient, QueryClientProvider } from 'react-query';
-import { ReactQueryDevtools } from 'react-query/devtools';
+import { Hydrate, QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 function MyApp({ Component, pageProps }) {
-  const queryClient = new QueryClient();
+  const [queryClient] = useState(() => new QueryClient());
+  // eslint-disable-next-line no-eval
+  const deserializedDehydratedState = eval(`(${pageProps.dehydratedState})`);
 
   return (
     <QueryClientProvider client={queryClient}>
-      <Component {...pageProps} />;
-      <ReactQueryDevtools initialIsOpen={false} />
+      <Hydrate state={deserializedDehydratedState}>
+        <Component {...pageProps} />
+      </Hydrate>
     </QueryClientProvider>
   );
 }
