@@ -1,6 +1,7 @@
+import { useInfiniteQuery } from '@tanstack/react-query';
 import { flatMap, partition } from 'lodash-es';
 import InfiniteScroll from 'react-infinite-scroller';
-import { useInfiniteQuery } from 'react-query';
+import { SpinnerInfinity } from 'spinners-react';
 
 import { fetchRecentVideos } from '../lib/request';
 
@@ -8,9 +9,8 @@ import VideoCard from './VideoCard';
 
 const sortVideoData = (data) => partition(flatMap(data.pages, 'videos'), { status: 'LIVE' }).flat();
 
-export default function VideoGrid({ initialVideoData }) {
+export default function VideoGrid() {
   const { data, fetchNextPage, hasNextPage, status, error } = useInfiniteQuery(['recentVideos'], fetchRecentVideos, {
-    initialData: { pages: [initialVideoData] },
     getNextPageParam: (lastPage) => lastPage.pageInfo.nextOffset,
     staleTime: Infinity,
   });
@@ -25,8 +25,8 @@ export default function VideoGrid({ initialVideoData }) {
       loadMore={fetchNextPage}
       hasMore={hasNextPage}
       loader={
-        <div className="mt-4 p-2 text-center border-black border" key={0}>
-          Getting more recent videos...
+        <div className="mt-4 p-2 flex flex-col justify-center items-center" key={0}>
+          <SpinnerInfinity size={50} thickness={80} speed={100} color="black" secondaryColor="lightgray" />
         </div>
       }
     >
