@@ -34,7 +34,7 @@ export const video = (_parent, _args, ctx) =>
 export const videoCount = (_parent, _args, ctx) => ctx.prisma.video.count();
 
 export async function recentVideos(_parent, _args, ctx) {
-  const videos = await ctx.prisma.video.findMany({
+  const query = {
     where: {
       channel: {
         NOT: {
@@ -54,17 +54,16 @@ export async function recentVideos(_parent, _args, ctx) {
         },
       },
     },
-    cursor: _args.cursor
-      ? {
-          id: _args.cursor,
-        }
-      : undefined,
-    skip: _args.cursor ? 1 : 0,
     orderBy: {
       sortTime: 'desc',
     },
     take: Math.min(_args.limit, config.GRAPHQL_MAX_RECENT_VIDEOS),
-  });
+  };
+
+  // Prisma's own cursor implementation ended up creating a slow query: https://github.com/prisma/prisma/issues/14402
+  if (_args.cursor) query.where.id = { gte: _args.cursor };
+
+  const videos = await ctx.prisma.video.findMany(query);
 
   return {
     videos,
