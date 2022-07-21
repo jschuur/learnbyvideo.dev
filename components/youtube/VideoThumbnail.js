@@ -1,3 +1,5 @@
+import Image from 'next/image';
+
 const thumbnailResolutions = {
   default: {
     prefix: '',
@@ -28,7 +30,7 @@ const thumbnailResolutions = {
 
 export default function VideoThumbnail({ res = 'medium', youtubeId, alt }) {
   return (
-    <img
+    <Image
       width={thumbnailResolutions[res].width}
       height={thumbnailResolutions[res].height}
       src={`https://i.ytimg.com/vi/${youtubeId}/${thumbnailResolutions[res].prefix}default.jpg`}

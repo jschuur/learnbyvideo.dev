@@ -41,7 +41,9 @@ export default function VideoCard({ video }) {
         <span className="font-semibold">{channel.channelName}</span>:{' '}
         <a href={`https://youtube.com/watch?v=${youtubeId}`}>{title}</a>
       </div>
-      <div className="text-right text-xs font-thin text-slate-700 pb-2 pr-2">{timeText}</div>
+      <div suppressHydrationWarning className="text-right text-xs font-thin text-slate-700 pb-2 pr-2">
+        {timeText}
+      </div>
     </div>
   );
 }
