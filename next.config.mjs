@@ -2,6 +2,7 @@ const nextConfig = {
   reactStrictMode: true,
   images: {
     domains: [
+      'i.ytimg.com',
       'i1.ytimg.com',
       'i2.ytimg.com',
       'i3.ytimg.com',
