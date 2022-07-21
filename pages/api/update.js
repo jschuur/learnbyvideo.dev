@@ -5,7 +5,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    await res.unstable_revalidate('/');
+    await res.revalidate('/');
     return res.redirect('/');
   } catch (err) {
     return res.status(500).send('Error revalidating');
