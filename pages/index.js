@@ -1,13 +1,11 @@
-import { gql } from '@apollo/client';
 import { dehydrate, QueryClient } from '@tanstack/react-query';
 import serialize from 'serialize-javascript';
 
 import Head from 'next/head';
 
-import { contextResolver } from '../graphql/context';
-import { createStaticApolloClient } from '../lib/apollo-client-static';
 import defaultGraphQLVariables from '../graphql/defaults';
 import { recentVideosQuery, siteDataQuery } from '../graphql/queries';
+import createLocalApolloClient from '../lib/apolloClient';
 
 import Footer from '../components/layout/Footer';
 import Header from '../components/layout/Header';
@@ -26,11 +24,9 @@ export default function HomePage({ videoCount, channelCount, lastUpdated }) {
   );
 }
 
-export async function getStaticProps(context) {
-  await contextResolver(context);
 async function loadPageData() {
+  const client = createLocalApolloClient();
 
-  const client = createStaticApolloClient(context);
   const {
     data: { recentVideos },
   } = await client.query({
