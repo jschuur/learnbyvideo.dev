@@ -6,6 +6,8 @@ import Head from 'next/head';
 
 import { contextResolver } from '../graphql/context';
 import { createStaticApolloClient } from '../lib/apollo-client-static';
+import defaultGraphQLVariables from '../graphql/defaults';
+import { recentVideosQuery, siteDataQuery } from '../graphql/queries';
 
 import Footer from '../components/layout/Footer';
 import Header from '../components/layout/Header';
@@ -26,39 +28,26 @@ export default function HomePage({ videoCount, channelCount, lastUpdated }) {
 
 export async function getStaticProps(context) {
   await contextResolver(context);
+async function loadPageData() {
 
   const client = createStaticApolloClient(context);
-  const response = await client.query({
-    query: gql`
-      query Query {
-        recentVideos(limit: ${process.env.NEXT_PUBLIC_VIDEO_GRID_COUNT || 120}) {
-          videos {
-            title
-            status
-            youtubeId
-            updatedAt
-            publishedAt
-            scheduledStartTime
-            actualStartTime
-            createdAt
-            duration
-            type
-            channel {
-              channelName
-              type
-            }
-          }
-          pageInfo {
-            nextOffset
-          }
-        }
-        videoCount
-        channelCount
-      }
-    `,
+  const {
+    data: { recentVideos },
+  } = await client.query({
+    query: recentVideosQuery,
+    variables: defaultGraphQLVariables,
+  });
+  const {
+    data: { videoCount, channelCount },
+  } = await client.query({
+    query: siteDataQuery,
   });
 
-  const { recentVideos } = response.data;
+  return { recentVideos, videoCount, channelCount };
+}
+
+export async function getStaticProps() {
+  const { recentVideos, videoCount, channelCount } = await loadPageData();
 
   // via https://dev.to/arianhamdi/react-query-v4-ssr-in-next-js-2ojj
   const queryClient = new QueryClient();
@@ -71,8 +60,8 @@ export async function getStaticProps(context) {
       dehydratedState: serialize(dehydrate(queryClient, { shouldDehydrateQuery: () => true })),
 
       lastUpdated,
-      videoCount: response.data.videoCount,
-      channelCount: response.data.channelCount,
+      videoCount,
+      channelCount,
     },
   };
 }

@@ -70,6 +70,7 @@
   },
   "devDependencies": {
     "autoprefixer": "^10.4.7",
+    "babel-plugin-import-graphql": "^2.8.1",
     "dotenv-cli": "^6.0.0",
     "eslint": "^8.20.0",
     "eslint-config-airbnb": "^19.0.4",
