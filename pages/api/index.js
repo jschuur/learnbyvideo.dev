@@ -2,7 +2,7 @@ import { makeExecutableSchema } from '@graphql-tools/schema';
 import { ApolloServer } from 'apollo-server-micro';
 import Cors from 'micro-cors';
 
-import { createContext } from '../../graphql/context';
+import context from '../../graphql/context';
 import resolvers from '../../graphql/resolvers';
 import typeDefs from '../../graphql/typedefs';
 
@@ -10,7 +10,7 @@ const cors = Cors();
 
 const apolloServer = new ApolloServer({
   schema: makeExecutableSchema({ typeDefs, resolvers }),
-  context: createContext,
+  context,
 });
 
 const startServer = apolloServer.start();
