@@ -1,0 +1,4 @@
+query GetSiteData {
+  videoCount
+  channelCount
+}
