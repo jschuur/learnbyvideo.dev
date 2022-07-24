@@ -29,12 +29,15 @@ const thumbnailResolutions = {
 };
 
 export default function VideoThumbnail({ res = 'medium', youtubeId, alt }) {
+  const { width, height } = thumbnailResolutions[res];
+
   return (
     <Image
-      width={thumbnailResolutions[res].width}
-      height={thumbnailResolutions[res].height}
+      width={width}
+      height={height}
       src={`https://i.ytimg.com/vi/${youtubeId}/${thumbnailResolutions[res].prefix}default.jpg`}
       alt={alt}
+      layout="responsive"
     />
   );
 }

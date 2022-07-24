@@ -33,11 +33,11 @@ export default function VideoCard({ video }) {
     >
       <a href={`https://youtube.com/watch?v=${youtubeId}`}>
         <div className="inline-block relative w-full">
-          <VideoThumbnail youtubeId={youtubeId} alt={title} className="w-full" />
+          <VideoThumbnail youtubeId={youtubeId} alt={title} className="block" />
           <VideoCardOverlay duration={duration} type={type} status={status} />
         </div>
       </a>
-      <div className="p-2 md: flex-grow">
+      <div className="p-2 md:p-1 flex-grow">
         <span className="font-semibold">{channel.channelName}</span>:{' '}
         <a href={`https://youtube.com/watch?v=${youtubeId}`}>{title}</a>
       </div>
