@@ -28,6 +28,7 @@ export default cors(async (req, res) => {
 });
 
 export const config = {
+  runtime: 'experimental-edge',
   api: {
     bodyParser: false,
   },

@@ -1,5 +1,18 @@
 const nextConfig = {
   reactStrictMode: true,
+  async headers() {
+    return [
+      {
+        source: '/api',
+        headers: [
+          {
+            key: 's-maxage',
+            value: '3600',
+          },
+        ],
+      },
+    ];
+  },
   images: {
     domains: [
       'i.ytimg.com',
