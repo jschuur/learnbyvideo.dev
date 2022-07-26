@@ -39,6 +39,7 @@
     "@fontsource/roboto": "^4.5.7",
     "@googleapis/youtube": "^4.2.0",
     "@graphql-tools/schema": "^8.5.0",
+    "@next/bundle-analyzer": "^12.2.3",
     "@prisma/client": "^4.1.0",
     "@tanstack/react-query": "^4.0.10",
     "apollo-server-micro": "^3.10.0",
