@@ -1,4 +1,4 @@
 {
   "presets": ["next/babel"],
-  "plugins": ["import-graphql"]
+  "plugins": ["import-graphql", "superjson-next"]
 }

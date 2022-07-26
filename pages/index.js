@@ -1,5 +1,4 @@
 import { dehydrate, QueryClient } from '@tanstack/react-query';
-import serialize from 'serialize-javascript';
 
 import Head from 'next/head';
 
@@ -53,7 +52,7 @@ export async function getStaticProps() {
 
   return {
     props: {
-      dehydratedState: serialize(dehydrate(queryClient, { shouldDehydrateQuery: () => true })),
+      dehydratedState: dehydrate(queryClient, { shouldDehydrateQuery: () => true }),
 
       lastUpdated,
       videoCount,
