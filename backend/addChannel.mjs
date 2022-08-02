@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 import 'dotenv/config';
 
+import url from 'url';
+
 import minimost from 'minimost';
 
 import { addChannel } from './db.mjs';
@@ -31,20 +33,22 @@ const { flags: options, input: youtubeIds } = minimost(process.argv.slice(2), {
   await quotaTracker.showSummary();
   console.log();
 
-  for (let id of youtubeIds) {
+  for (const id of youtubeIds) {
     try {
-      id = id.replace('https://www.youtube.com/watch?v=', '');
-      id = id.replace('https://www.youtube.com/channel/', '');
+      // either get the video ID from the querystring, or get a channel ID from different URL formats
+      const youtubeId =
+        url.parse(id, true)?.query?.v || id.replace(/https:\/\/(www.)?(youtu.be\/|youtube\.com\/channel\/)/, '');
 
-      const youtubeId = id.startsWith('UC')
-        ? id
-        : (await youTubeVideosList({ ids: [id], quotaTracker }))?.[0]?.snippet?.channelId;
+      // channel IDs all start with U
+      const channelId = youtubeId?.startsWith('UC')
+        ? youtubeId
+        : (await youTubeVideosList({ ids: [youtubeId], quotaTracker }))?.[0]?.snippet?.channelId;
 
-      if (!youtubeId) throw Error('No channel found');
+      if (!channelId) throw Error('No channel found');
 
       await addChannel({
         data: {
-          youtubeId,
+          youtubeId: channelId,
           status: options.status?.toUpperCase(),
           type: options.type?.toUpperCase(),
           defaultCategory: options.defaultCategory?.toUpperCase(),
