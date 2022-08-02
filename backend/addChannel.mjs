@@ -11,7 +11,9 @@ import QuotaTracker from './youtubeQuota.mjs';
 
 const { flags: options, input: youtubeIds } = minimost(process.argv.slice(2), {
   string: ['status', 'default-category', 'type'],
+  boolean: ['force'],
   alias: {
+    f: 'force',
     s: 'status',
     c: 'default-category',
     t: 'type',
@@ -19,8 +21,9 @@ const { flags: options, input: youtubeIds } = minimost(process.argv.slice(2), {
 });
 
 (async () => {
+  const { force } = options;
   const startTime = Date.now();
-  const quotaTracker = new QuotaTracker({ task: 'add_channel' });
+  const quotaTracker = new QuotaTracker({ task: 'add_channel', force });
 
   console.log('Starting add:channels');
   await quotaTracker.checkUsage();
