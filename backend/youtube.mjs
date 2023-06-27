@@ -1,4 +1,4 @@
-import dateFnsTz from 'date-fns-tz';
+import { formatInTimeZone } from 'date-fns-tz';
 import { keyBy, map, uniqBy } from 'lodash-es';
 import fetch from 'node-fetch';
 import pluralize from 'pluralize';
@@ -10,8 +10,6 @@ import { error, warn } from './util.mjs';
 import { youTubePlaylistItems, youTubeVideosList } from './youtubeApi.mjs';
 
 import config from './config.mjs';
-
-const { formatInTimeZone } = dateFnsTz;
 
 const rssParser = new Parser({
   customFields: {

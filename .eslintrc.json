@@ -13,6 +13,11 @@
     "no-await-in-loop": "off",
     "no-restricted-syntax": ["off", "ForOfStatement"]
   },
+  "parserOptions": {
+    "babelOptions": {
+      "presets": ["next/babel"]
+    }
+  },
   "overrides": [
     {
       "files": ["backend/*.mjs"], // Or *.test.js

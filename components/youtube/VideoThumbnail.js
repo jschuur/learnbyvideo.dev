@@ -32,15 +32,17 @@ export default function VideoThumbnail({ res = 'medium', youtubeId, alt }) {
   const { width, height } = thumbnailResolutions[res];
 
   return (
-    // Need to use unoptimized here, because all the different thumbnail images immediately hit a
-    // Vercel free tier limit
     <Image
       width={width}
       height={height}
       src={`https://i.ytimg.com/vi/${youtubeId}/${thumbnailResolutions[res].prefix}default.jpg`}
       alt={alt}
       unoptimized
-      layout="responsive"
+      sizes="100vw"
+      style={{
+        width: '100%',
+        height: 'auto',
+      }}
     />
   );
 }
