@@ -7,6 +7,7 @@ const withBundleAnalyzer = BundleAnalyzer({
 const nextConfig = {
   reactStrictMode: true,
   images: {
+    /* cspell:disable */
     domains: [
       'i.ytimg.com',
       'i1.ytimg.com',
@@ -17,6 +18,7 @@ const nextConfig = {
       'i6.ytimg.com',
       'i7.ytimg.com',
     ],
+    /* cspell:enable */
   },
 };
 
