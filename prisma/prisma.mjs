@@ -1,7 +1,5 @@
 /* eslint-disable no-console */
-import PrismaClientPkg from '@prisma/client';
-
-const { PrismaClient } = PrismaClientPkg;
+import { PrismaClient } from '@prisma/client';
 
 function getPrisma() {
   if (process.env.NODE_ENV === 'production') return new PrismaClient();
