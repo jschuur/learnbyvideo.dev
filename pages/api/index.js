@@ -9,26 +9,26 @@ import typeDefs from '../../graphql/typedefs';
 const cors = Cors();
 
 const apolloServer = new ApolloServer({
-  schema: makeExecutableSchema({ typeDefs, resolvers }),
-  context,
+	schema: makeExecutableSchema({ typeDefs, resolvers }),
+	context,
 });
 
 const startServer = apolloServer.start();
 
 export default cors(async (req, res) => {
-  if (req.method === 'OPTIONS') {
-    res.end();
-  } else {
-    await startServer;
+	if (req.method === 'OPTIONS') {
+		res.end();
+	} else {
+		await startServer;
 
-    await apolloServer.createHandler({
-      path: '/api',
-    })(req, res);
-  }
+		await apolloServer.createHandler({
+			path: '/api',
+		})(req, res);
+	}
 });
 
 export const config = {
-  api: {
-    bodyParser: false,
-  },
+	api: {
+		bodyParser: false,
+	},
 };

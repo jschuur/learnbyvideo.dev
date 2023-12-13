@@ -10,55 +10,55 @@ import { crawlChannel } from './youtube.mjs';
 import QuotaTracker from './youtubeQuota.mjs';
 
 const options = minimost(process.argv.slice(2), {
-  string: ['max-channels'],
-  boolean: ['force'],
-  alias: {
-    c: 'max-channels',
-    f: 'force',
-  },
+	string: ['max-channels'],
+	boolean: ['force'],
+	alias: {
+		c: 'max-channels',
+		f: 'force',
+	},
 }).flags;
 
 // Crawls new channels for videos (e.g. is a channel was added quickly from a bookmarklet)
 (async () => {
-  const { force } = options;
-  let crawlState;
-  const startTime = Date.now();
-  const quotaTracker = new QuotaTracker({ task: 'crawl_channels', force });
+	const { force } = options;
+	let crawlState;
+	const startTime = Date.now();
+	const quotaTracker = new QuotaTracker({ task: 'crawl_channels', force });
 
-  console.log('Starting crawl:channels');
-  await quotaTracker.checkUsage();
+	console.log('Starting crawl:channels');
+	await quotaTracker.checkUsage();
 
-  await quotaTracker.showSummary();
-  console.log();
+	await quotaTracker.showSummary();
+	console.log();
 
-  // Get all the channels that still need crawling
-  const channels = await getChannels({
-    where: { crawlState: CrawlState.PENDING },
-    take: options.maxChannels ? parseInt(options.maxChannels, 10) : undefined,
-  });
+	// Get all the channels that still need crawling
+	const channels = await getChannels({
+		where: { crawlState: CrawlState.PENDING },
+		take: options.maxChannels ? parseInt(options.maxChannels, 10) : undefined,
+	});
 
-  console.log(`Crawling ${pluralize('channel', channels.length, true)}...`);
+	console.log(`Crawling ${pluralize('channel', channels.length, true)}...`);
 
-  for (const channel of channels) {
-    try {
-      const videos = await crawlChannel({ channel, quotaTracker });
-      if (videos?.length) await upsertVideos(videos);
+	for (const channel of channels) {
+		try {
+			const videos = await crawlChannel({ channel, quotaTracker });
+			if (videos?.length) await upsertVideos(videos);
 
-      crawlState = CrawlState.COMPLETED;
-    } catch ({ message }) {
-      crawlState = CrawlState.ERROR;
+			crawlState = CrawlState.COMPLETED;
+		} catch ({ message }) {
+			crawlState = CrawlState.ERROR;
 
-      error(message);
-    }
+			error(message);
+		}
 
-    await updateChannel({ id: channel.id, lastCheckedAt: new Date(startTime), crawlState });
+		await updateChannel({ id: channel.id, lastCheckedAt: new Date(startTime), crawlState });
 
-    await quotaTracker.checkUsage();
-  }
+		await quotaTracker.checkUsage();
+	}
 
-  console.log();
-  await quotaTracker.showSummary();
+	console.log();
+	await quotaTracker.showSummary();
 
-  logTimeSpent(startTime);
-  logMemoryUsage();
+	logTimeSpent(startTime);
+	logMemoryUsage();
 })();
