@@ -16,7 +16,7 @@ export async function updateHomePage() {
     const res = await fetch(`http://learnbyvideo.dev/api/update?secret=${process.env.REVALIDATE_SECRET_TOKEN}`);
 
     if (res.ok) {
-      console.log(`Home page successfully updated`);
+      console.log('Home page successfully updated');
     } else {
       error(`Couldn't update home page`);
     }

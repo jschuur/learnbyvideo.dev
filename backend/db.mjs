@@ -103,7 +103,7 @@ export async function upsertVideos(videos) {
 
     for (const video of channelVideos) {
       try {
-        delete video.channel;
+        video.channel = undefined;
 
         const newVideo = await prisma.video.upsert({
           where: {
@@ -190,7 +190,7 @@ export async function addChannel({ data, lastCheckedAt, quotaTracker, crawlVideo
       quotaTracker,
     });
 
-    if (!channelData?.length) throw Error(`Invalid channel ID`);
+    if (!channelData?.length) throw Error('Invalid channel ID');
 
     channel = await saveChannel({ ...extractChannelInfo(channelData[0]), ...customChannelData });
 
