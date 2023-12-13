@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 import 'dotenv/config';
 
+import url from 'url';
+
 import minimost from 'minimost';
 
 import { addChannel } from './db.mjs';
@@ -11,7 +13,9 @@ import QuotaTracker from './youtubeQuota.mjs';
 
 const { flags: options, input: youtubeIds } = minimost(process.argv.slice(2), {
   string: ['status', 'default-category', 'type'],
+  boolean: ['force'],
   alias: {
+    f: 'force',
     s: 'status',
     c: 'default-category',
     t: 'type',
@@ -19,8 +23,9 @@ const { flags: options, input: youtubeIds } = minimost(process.argv.slice(2), {
 });
 
 (async () => {
+  const { force } = options;
   const startTime = Date.now();
-  const quotaTracker = new QuotaTracker({ task: 'add_channel' });
+  const quotaTracker = new QuotaTracker({ task: 'add_channel', force });
 
   console.log('Starting add:channels');
   await quotaTracker.checkUsage();
@@ -28,20 +33,22 @@ const { flags: options, input: youtubeIds } = minimost(process.argv.slice(2), {
   await quotaTracker.showSummary();
   console.log();
 
-  for (let id of youtubeIds) {
+  for (const id of youtubeIds) {
     try {
-      id = id.replace('https://www.youtube.com/watch?v=', '');
-      id = id.replace('https://www.youtube.com/channel/', '');
+      // either get the video ID from the querystring, or get a channel ID from different URL formats
+      const youtubeId =
+        url.parse(id, true)?.query?.v || id.replace(/https:\/\/(www.)?(youtu.be\/|youtube\.com\/channel\/)/, '');
 
-      const youtubeId = id.startsWith('UC')
-        ? id
-        : (await youTubeVideosList({ ids: [id], quotaTracker }))?.[0]?.snippet?.channelId;
+      // channel IDs all start with U
+      const channelId = youtubeId?.startsWith('UC')
+        ? youtubeId
+        : (await youTubeVideosList({ ids: [youtubeId], quotaTracker }))?.[0]?.snippet?.channelId;
 
-      if (!youtubeId) throw Error('No channel found');
+      if (!channelId) throw Error('No channel found');
 
       await addChannel({
         data: {
-          youtubeId,
+          youtubeId: channelId,
           status: options.status?.toUpperCase(),
           type: options.type?.toUpperCase(),
           defaultCategory: options.defaultCategory?.toUpperCase(),
