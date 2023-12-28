@@ -7,6 +7,8 @@ import { ChannelStatus, VideoStatus } from '@prisma/client';
 import config from '@/backend/config.mjs';
 import prisma from '@/prisma/prisma.mjs';
 
+const selectFields = (fields) => fields.reduce((acc, field) => ({ ...acc, [field]: true }), {});
+
 export const getChannelCount = async () => prisma.channel.count();
 export const getVideoCount = async () => prisma.video.count();
 
@@ -38,11 +40,21 @@ export async function getRecentVideos({
         in: [VideoStatus.UPCOMING, VideoStatus.LIVE, VideoStatus.PUBLISHED],
       },
     },
-    include: {
+    select: {
+      ...selectFields([
+        'title',
+        'status',
+        'youtubeId',
+        'updatedAt',
+        'publishedAt',
+        'scheduledStartTime',
+        'actualStartTime',
+        'createdAt',
+        'duration',
+        'type',
+      ]),
       channel: {
-        include: {
-          links: true,
-        },
+        select: selectFields(['channelName', 'type']),
       },
     },
     orderBy: {
