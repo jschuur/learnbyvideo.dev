@@ -1,4 +1,0 @@
-query GetSiteData {
-  videoCount
-  channelCount
-}

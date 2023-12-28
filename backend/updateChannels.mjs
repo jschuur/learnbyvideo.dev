@@ -10,30 +10,30 @@ import { youTubeChannelsList } from './youtubeApi.mjs';
 import QuotaTracker from './youtubeQuota.mjs';
 
 (async () => {
-	const startTime = Date.now();
-	const quotaTracker = new QuotaTracker({ task: 'update_channels' });
+  const startTime = Date.now();
+  const quotaTracker = new QuotaTracker({ task: 'update_channels' });
 
-	console.log('Starting update:channels');
-	await quotaTracker.checkUsage();
+  console.log('Starting update:channels');
+  await quotaTracker.checkUsage();
 
-	await quotaTracker.showSummary();
-	console.log();
+  await quotaTracker.showSummary();
+  console.log();
 
-	const channels = await getChannels();
+  const channels = await getChannels();
 
-	console.log(`Updating ${pluralize('channel', channels.length, true)}`);
+  console.log(`Updating ${pluralize('channel', channels.length, true)}`);
 
-	const channelData = await youTubeChannelsList({
-		ids: map(channels, 'youtubeId'),
-		part: 'snippet,statistics',
-		quotaTracker,
-	});
+  const channelData = await youTubeChannelsList({
+    ids: map(channels, 'youtubeId'),
+    part: 'snippet,statistics',
+    quotaTracker,
+  });
 
-	await updateChannels(channelData.map((channel) => extractChannelInfo(channel)));
+  await updateChannels(channelData.map((channel) => extractChannelInfo(channel)));
 
-	console.log();
-	await quotaTracker.showSummary();
+  console.log();
+  await quotaTracker.showSummary();
 
-	logTimeSpent(startTime);
-	logMemoryUsage();
+  logTimeSpent(startTime);
+  logMemoryUsage();
 })();
