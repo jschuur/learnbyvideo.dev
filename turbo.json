@@ -12,6 +12,10 @@
 			"dependsOn": ["site#build"],
 			"outputs": ["dist/**", ".next/**"]
 		},
+		"build:backend": {
+			"dependsOn": ["backend#build"],
+			"outputs": ["dist/**"]
+		},
 		"dev": {
 			"cache": false,
 			"persistent": true

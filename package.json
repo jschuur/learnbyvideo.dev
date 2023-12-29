@@ -5,6 +5,7 @@
 	"scripts": {
 		"dev": "turbo run dev --parallel",
 		"build:site": "turbo run build:site",
+		"build:backend": "turbo run build:backend",
 		"db:generate": "turbo run db:generate",
 		"lint": "biome lint .",
 		"format": "biome format .",

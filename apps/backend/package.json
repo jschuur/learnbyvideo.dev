@@ -7,6 +7,8 @@
 	"scripts": {
 		"deploy": "ssh node 'cd learnbyvideo.dev && npm run update:backend'",
 		"update": "git checkout backend && git reset --hard && git pull && npm install && npx prisma generate",
+		"build": "true",
+		"hello": "echo 'hello world'",
 		"find:videos": "node src/findVideos.js $1",
 		"find:videos:prod": "NODE_ENV=production node src/findVideos.js $1",
 		"find:videos:recheck": "node src/findVideos.js --find-new-videos false",

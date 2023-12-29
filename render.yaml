@@ -1,0 +1,16 @@
+services:
+  - type: cron
+    name: learnbyvideo-backend
+    plan: starter
+    region: ohio
+    runtime: node
+    schedule: '0 * * * *'
+    branch: cron
+    rootDir: apps/backend
+    buildCommand: pnpm install && pnpm build
+    startCommand: pnpm run hello --filter backend
+    envVars:
+      - key: NODE_VERSION
+        value: 18
+      - key: NODE_ENV
+        value: production
