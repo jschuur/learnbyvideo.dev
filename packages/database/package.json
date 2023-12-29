@@ -1,0 +1,42 @@
+{
+	"name": "database",
+	"version": "1.0.0",
+	"description": "learnbyvideo.dev shared database code",
+	"type": "module",
+	"main": "./dist/index.js",
+	"module": "./dist/index.mjs",
+	"types": "./dist/index.d.ts",
+	"files": [
+		"dist/**"
+	],
+	"scripts": {
+		"build": "tsup",
+		"prebuild": "pnpm run generate",
+		"predev": "pnpm run generate",
+		"dev": "tsup --watch",
+		"generate": "dotenv -e ../../.env -- prisma generate",
+		"clean": "rimraf .turbo node_modules dist",
+		"db:migrate": "dotenv -e ../../.env -- prisma migrate dev",
+		"db:migrate:prod": "dotenv -e ../../.env.production -- prisma migrate deploy",
+		"db:dump:local": "pg_dump -d learnbyvideodev -Fc -f tmp/dbdump_local_`date +\"%Y-%m-%d_%H:%M:%S\"`.dump",
+		"db:dump:local:latest": "pg_dump -- -d '%DATABASE_URL%' -Fc -f tmp/dbdump_local_latest.dump",
+		"db:dump:prod": "dotenv -e ../../.env.production -- pg_dump -d '%DATABASE_URL%' -Fc -f tmp/dbdump_prod_latest.dump",
+		"db:push:prod": "dotenv -e ../../.env.production -- pg_restore --no-acl --no-owner --clean -d '%DATABASE_URL%' tmp/dbdump_local_latest.dump",
+		"db:push": "pnpm run db:dump:local:latest && pnpm run db:push:prod"
+	},
+	"keywords": [],
+	"author": "",
+	"license": "ISC",
+	"devDependencies": {
+		"@types/node": "^20.10.5",
+		"dotenv-cli": "^7.3.0",
+		"prisma": "^5.7.1",
+		"rimraf": "^5.0.5",
+		"tsconfig": "workspace:*",
+		"tsup": "^8.0.1",
+		"typescript": "^5.3.3"
+	},
+	"dependencies": {
+		"@prisma/client": "^5.7.1"
+	}
+}
