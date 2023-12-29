@@ -1,0 +1,12 @@
+{
+	"name": "config",
+	"version": "1.0.0",
+	"description": "learnbyvideo.dev shared config",
+	"main": "src/index.js",
+	"type": "module",
+	"exports": "./src/index.js",
+	"scripts": {},
+	"keywords": [],
+	"author": "",
+	"license": "ISC"
+}

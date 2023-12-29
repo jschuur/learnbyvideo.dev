@@ -1,0 +1,178 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Category {
+  TUTORIAL
+  LIVECODING
+  SOFTSKILL
+  SHOW
+  TALK
+  VLOG
+  DOCUMENTARY
+  UPDATE // Channel updates
+  ANNOUNCEMENT // Product/release announcements
+  NEWS // e.g. the Fireship news updates
+  QANDA
+  INTERVIEW
+  REVIEW
+  PORTFOLIOREVIEW
+  OTHER
+  NONE // Manually tagged as having no category after review
+}
+
+model Channel {
+  id                    Int           @id @default(autoincrement())
+  youtubeId             String        @unique
+  channelName           String
+  authorName            String?
+  type                  ChannelType   @default(value: INDIVIDUAL)
+  status                ChannelStatus @default(value: ACTIVE)
+  reviewed              Boolean       @default(value: false)
+  customUrl             String?       @unique
+  description           String?
+  country               String?
+  thumbnail             String?
+  thumbnailMedium       String?
+  thumbnailHigh         String?
+  defaultCategory       Category?
+  defaultLanguage       String        @default("en")
+  viewCount             Int           @default(-1)
+  subscriberCount       Int           @default(-1)
+  hiddenSubscriberCount Boolean       @default(false)
+  videoCount            Int           @default(-1)
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+  lastCheckedAt         DateTime?
+  lastPublishedAt       DateTime?
+  // YouTube channel launch date
+  publishedAt           DateTime
+  crawlState            CrawlState    @default(PENDING)
+  videos                Video[]
+  links                 ChannelLink[]
+}
+
+// Active: checked for updates
+// Paused: listed, but not checked for updates
+enum ChannelStatus {
+  ACTIVE // checked for updates
+  PAUSED // listed, but not checked for updates
+  MODERATED // listed and checked for updates, new videos first marked as moderated
+  HIDDEN // not listed
+  ARCHIVED // not listed and not checked for updates
+}
+
+enum ChannelType {
+  BRAND
+  INDIVIDUAL
+  COLLABORATION
+  SHOW
+  EVENT
+  OTHER
+}
+
+enum CrawlState {
+  PENDING
+  COMPLETED
+  ERROR
+}
+
+model ChannelLink {
+  id        Int             @id @default(autoincrement())
+  channel   Channel         @relation(fields: [channelId], references: [id])
+  channelId Int
+  url       String
+  title     String?
+  type      ChannelLinkType
+}
+
+enum ChannelLinkType {
+  Twitter
+  FacebooK
+  LinkedIn
+  GitHub
+  Twitch
+  Instagram
+  Homepage
+  Blog
+  YouTube
+  Podcast
+  Patreon
+  Shop
+  Discord
+  Slack
+  Links // Linktree etc.
+  Link
+  TikTok
+  Course
+}
+
+model Video {
+  id                 Int         @id @default(autoincrement())
+  youtubeId          String      @unique
+  channel            Channel     @relation(fields: [channelId], references: [id])
+  channelId          Int
+  type               VideoType   @default(value: VIDEO)
+  status             VideoStatus @default(value: PUBLISHED)
+  reviewed           Boolean     @default(value: false)
+  category           Category?
+  youtubeTags        String[]
+  language           String?
+  title              String
+  description        String?
+  duration           String?
+  durationSeconds    Int         @default(-1)
+  viewCount          Int         @default(-1)
+  likeCount          Int         @default(-1)
+  commentCount       Int         @default(-1)
+  scheduledStartTime DateTime?
+  actualStartTime    DateTime?
+  actualEndTime      DateTime?
+  sortTime           DateTime
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
+  publishedAt        DateTime
+
+  @@index([status])
+}
+
+enum VideoStatus {
+  UPCOMING // not yet published (YouTube Premiere)
+  PUBLISHED // pubblished on YouTube
+  MODERATED // video is awaiting moderation before being listed (becomes PUBLISHED or HIDDEN)
+  LIVE // video is currently srtreaming live on YouTube
+  HIDDEN // video not listed (on learnbyvideo.dev)
+  DELETED // channel removed a previously published video
+  PRIVATE // channel marked it as private (needs to be manually managed)
+  UNLISTED // for future use
+  OVERDUE // past its scheduledStartTime
+  UNKNOWN // unidentifiable (e.g. couldn't parse 404 video status)
+}
+
+enum VideoType {
+  VIDEO
+  SHORT
+}
+
+model QuotaUsage {
+  id       Int                 @id @default(autoincrement())
+  date     String
+  endpoint QuotaUsageEndpoints
+  parts    String?
+  points   Int
+  task     String?
+}
+
+enum QuotaUsageEndpoints {
+  CHANNELSLIST
+  PLAYLISTITEMSLIST
+  VIDEOSLIST
+}
