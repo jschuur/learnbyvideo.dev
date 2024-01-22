@@ -154,7 +154,10 @@ async function findNewVideos(channels) {
       latestVideos: recheckVideosResult,
     });
 
-    if (process.env.NODE_ENV === 'production') await updateHomePage();
+    if (process.env.NODE_ENV === 'production') {
+      await updateHomePage(`${process.env.SITE_BASE_URL || 'https://learnbyvideo.dev'}/api/update`);
+      await updateHomePage(`https://beta.learnbyvideo.dev/update`);
+    }
   } catch ({ message }) {
     error(`Problem looking for video updates: ${message}`);
   }
