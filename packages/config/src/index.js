@@ -25,6 +25,7 @@ const config = {
     update_videos: 5000,
     update_channels: 500,
     add_channel: 2000,
+    ...(process.env.TASK_QUOTAS ? JSON.parse(process.env.TASK_QUOTAS) : {}),
   },
 
   youTubeApiPartQuotas: {

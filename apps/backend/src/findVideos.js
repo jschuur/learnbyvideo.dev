@@ -170,4 +170,6 @@ async function findNewVideos(channels) {
 
   logTimeSpent(startTime);
   logMemoryUsage();
+
+  process.exit(0);
 })();
