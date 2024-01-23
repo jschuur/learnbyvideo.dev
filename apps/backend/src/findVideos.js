@@ -155,8 +155,11 @@ async function findNewVideos(channels) {
     });
 
     if (process.env.NODE_ENV === 'production') {
-      await updateHomePage(`${process.env.SITE_BASE_URL || 'https://learnbyvideo.dev'}/api/update`);
-      await updateHomePage(`https://beta.learnbyvideo.dev/update`);
+      const updateHostnames = process.env.UPDATE_HOSTNAMES || 'https://learnbyvideo.dev/api/update';
+
+      for (const updateHostname of updateHostnames.split(',')) {
+        await updateHomePage(updateHostname);
+      }
     }
   } catch ({ message }) {
     error(`Problem looking for video updates: ${message}`);
