@@ -21,7 +21,7 @@ const config = {
   taskQuotas: {
     all: 10000,
     crawl_channels: 2000,
-    find_videos: 2000,
+    find_videos: 4000,
     update_videos: 5000,
     update_channels: 500,
     add_channel: 2000,
