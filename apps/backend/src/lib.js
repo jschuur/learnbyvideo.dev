@@ -9,21 +9,25 @@ import { missingVideoStatus, videoUrl } from './youtube.js';
 
 // Rebuild the static homepage on Vercel via on demand ISR
 // eslint-disable-next-line import/prefer-default-export
-export async function updateHomePage(updateApiUrl) {
-  try {
-    console.log(`\nUpdating production home page via ${updateApiUrl} ...`);
+export async function updateHomePage() {
+  const updateHostnames = process.env.UPDATE_HOSTNAMES || 'https://learnbyvideo.dev/api/update';
 
-    const res = await fetch(`${updateApiUrl}?secret=${process.env.REVALIDATE_SECRET_TOKEN}`);
+  for (const updateBase of updateHostnames.split(',')) {
+    try {
+      console.log(`\nUpdating production home page via ${updateBase} ...`);
 
-    if (res.ok) {
-      console.log('Home page successfully updated');
-    } else {
-      const body = await res.json();
+      const res = await fetch(`${updateBase}?secret=${process.env.REVALIDATE_SECRET_TOKEN}`);
 
-      error(`Couldn't update home page: ${body?.message}`);
+      if (res.ok) {
+        console.log('Home page successfully updated');
+      } else {
+        const body = await res.json();
+
+        error(`Couldn't update home page: ${body?.message}`);
+      }
+    } catch ({ message }) {
+      error(`Couldn't update home page: ${message}`);
     }
-  } catch ({ message }) {
-    error(`Couldn't update home page: ${message}`);
   }
 }
 

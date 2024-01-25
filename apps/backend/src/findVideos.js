@@ -155,11 +155,7 @@ async function findNewVideos(channels) {
     });
 
     if (process.env.NODE_ENV === 'production') {
-      const updateHostnames = process.env.UPDATE_HOSTNAMES || 'https://learnbyvideo.dev/api/update';
-
-      for (const updateHostname of updateHostnames.split(',')) {
-        await updateHomePage(updateHostname);
-      }
+      await updateHomePage();
     }
   } catch ({ message }) {
     error(`Problem looking for video updates: ${message}`);
