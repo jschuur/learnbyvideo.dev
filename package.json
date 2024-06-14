@@ -11,8 +11,8 @@
 		"format:write": "biome format --write ."
 	},
 	"devDependencies": {
-		"@biomejs/biome": "1.4.1",
-		"turbo": "^1.11.2"
+		"@biomejs/biome": "1.8.1",
+		"turbo": "^1.13.4"
 	},
 	"prisma": {
 		"schema": "packages/database/schema.prisma"
